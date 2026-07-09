@@ -105,6 +105,41 @@ it is the method working: the permutation test tells us to move to a less-effici
 more steel-pure target (HRC futures, freight rates) and high-severity-only events before
 claiming attribution value. That is the next step, not a patch to this one.
 
+## Attribution retest on HRC steel futures (pre-registered, still negative)
+
+The prescribed retry was run on **HRC=F** (the futures contract Section 232 tariffs act
+on directly) with **high-severity-only events** (rule-tagged severity >= 0.7, n = 11) and
+a **pre-registered 5-day primary window**, using ACI online calibration (coverage held at
+90.0%, 207 breach-days / 2060 scanned). See `scripts/step4_hrc_attribution.py`, numbers
+in [`outputs/step4_hrc_summary.json`](outputs/step4_hrc_summary.json).
+
+| Test | Hit rate | Base rate | p |
+| --- | --- | --- | --- |
+| **Primary: high-sev, 5d (pre-registered)** | 2.4% | 2.2% | **0.46** |
+| Sensitivity: high-sev, 3/10/14d | 1.9-4.8% | 1.6-5.2% | 0.39-0.67 |
+| Reference: all events, 14d | 69.6% | 66.0% | 0.25 |
+
+![HRC breaches vs high-severity events](outputs/figures/hrc_breaches_high_severity.png)
+
+**Verdict: not significant, and the primary test was fixed before looking at the data,
+so this is the honest answer, not a p-hacking miss.** Two diagnoses, both documented
+rather than papered over:
+
+1. **Low power.** Only 11 high-severity events survive the filter over 8 years; with a
+   2.2% base rate the test cannot detect anything but an enormous effect.
+2. **Event-date mismeasurement.** The Federal Register *publication* date lags the
+   market-moving *announcement*, often by 1-2 weeks (e.g. the March 2018 Section 232
+   proclamation was announced on Mar 1, signed Mar 8, published Mar 15; the market moved
+   on Mar 1). Daily-breach co-occurrence keyed to FR dates will therefore understate any
+   true association. Fixing this requires an announcement-dated event stream (news/GDELT)
+   with the Federal Register kept as the verification and severity anchor, exactly the
+   two-source design already scaffolded in `src/data/events.py` (news is stubbed for v2).
+
+**Consequence for the system's claims:** attribution is shipped as *verifiable candidate
+surfacing* (a temporally plausible event with a source link for a human to judge), and
+the causal early-warning claim is explicitly deferred until announcement-dated events
+exist. The permutation harness stays in place as the gate any future claim must pass.
+
 ---
 
 ## How it works

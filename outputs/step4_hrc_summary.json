@@ -1,0 +1,43 @@
+{
+  "symbol": "HRC=F",
+  "framing": "pre-registered primary test: ACI online breaches x high-severity events (sev>=0.7) within 5 days; sensitivity windows reported but not the claim",
+  "n_events_total": 255,
+  "n_events_high_severity": 11,
+  "aci_realized_coverage": 0.8995,
+  "n_breach_days": 207,
+  "n_days_scanned": 2060,
+  "primary_test": {
+    "observed": 0.0242,
+    "base": 0.0218,
+    "null_mean": 0.022,
+    "p_value": 0.4605
+  },
+  "primary_significant_at_0.05": false,
+  "sensitivity": {
+    "high_sev_3d": {
+      "observed": 0.0193,
+      "base": 0.0161,
+      "null_mean": 0.0155,
+      "p_value": 0.3925
+    },
+    "high_sev_10d": {
+      "observed": 0.0338,
+      "base": 0.0398,
+      "null_mean": 0.0404,
+      "p_value": 0.669
+    },
+    "high_sev_14d": {
+      "observed": 0.0483,
+      "base": 0.0521,
+      "null_mean": 0.0519,
+      "p_value": 0.5875
+    },
+    "all_events_14d_reference": {
+      "observed": 0.6957,
+      "base": 0.6597,
+      "null_mean": 0.658,
+      "p_value": 0.246
+    }
+  },
+  "figure": "outputs/figures/hrc_breaches_high_severity.png"
+}
