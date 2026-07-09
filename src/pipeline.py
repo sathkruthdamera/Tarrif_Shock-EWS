@@ -22,8 +22,8 @@ from src.data import prices as prices_mod
 from src.detect import changepoint
 from src.events.attribute import AttributedEvent, attribute_break
 from src.events.embed import EventEmbedder
-from src.forecast.chronos_model import ChronosForecaster
 from src.forecast.conformal import ConformalCalibrator
+from src.forecast.timesfm_model import TimesFMForecaster
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -58,7 +58,7 @@ def run(cfg: dict) -> list[Alert]:
     event_table = events_mod.build_event_table(cfg)
 
     fcfg, cal = cfg["forecast"], cfg["calibration"]
-    forecaster = ChronosForecaster()
+    forecaster = TimesFMForecaster()
     calibrator = ConformalCalibrator(
         forecaster,
         target_coverage=cal["target_coverage"],

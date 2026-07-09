@@ -2,8 +2,8 @@
 /data/*
 !/data/.gitkeep
 
-# Generated outputs - keep the folder tree, ignore heavy artifacts
-/outputs/**/*.png
+# Generated outputs - figures under outputs/figures are intentional deliverables
+# and ARE committed; only heavy intermediate artifacts are ignored.
 /outputs/**/*.pdf
 /outputs/**/*.parquet
 

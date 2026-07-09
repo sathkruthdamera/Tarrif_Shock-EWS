@@ -82,3 +82,41 @@ def empirical_coverage(interval: CalibratedInterval, actual: pd.Series) -> float
     """Fraction of actuals that fall inside the interval (should match nominal)."""
     inside = ~interval.breaches(actual)
     return float(inside.mean())
+
+
+# ---------------------------------------------------------------------------
+# Conformalized Quantile Regression (CQR), for quantile-native models (TimesFM).
+# Romano, Patterson & Candes (2019): given a model's lower/upper quantile band,
+# widen (or tighten) it by a single data-driven offset so the interval attains
+# the target marginal coverage on exchangeable data.
+# ---------------------------------------------------------------------------
+
+def cqr_offset(lower: np.ndarray, upper: np.ndarray, actual: np.ndarray,
+               target_coverage: float = 0.90) -> float:
+    """Compute the CQR conformal offset ``Q`` from a calibration set.
+
+    Nonconformity score per point: ``E = max(lower - y, y - upper)`` (negative when
+    inside the band). ``Q`` is the finite-sample-adjusted empirical quantile of E.
+    The calibrated band is ``[lower - Q, upper + Q]``.
+    """
+    lower = np.asarray(lower, float); upper = np.asarray(upper, float)
+    actual = np.asarray(actual, float)
+    scores = np.maximum(lower - actual, actual - upper)
+    n = len(scores)
+    if n == 0:
+        return 0.0
+    # finite-sample rank: ceil((n+1)(1-alpha)) / n, clipped to [0, 1]
+    level = min(1.0, np.ceil((n + 1) * target_coverage) / n)
+    return float(np.quantile(scores, level, method="higher"))
+
+
+def apply_cqr(index: pd.DatetimeIndex, lower: np.ndarray, median: np.ndarray,
+              upper: np.ndarray, offset: float, target_coverage: float) -> CalibratedInterval:
+    """Apply a CQR offset to a raw quantile band, returning a calibrated interval."""
+    return CalibratedInterval(
+        index=index,
+        lower=np.asarray(lower, float) - offset,
+        median=np.asarray(median, float),
+        upper=np.asarray(upper, float) + offset,
+        coverage_target=target_coverage,
+    )

@@ -12,25 +12,51 @@ supply-chain time series. It combines three current techniques into one pipeline
 
 ---
 
-## Worked example (populated after the first backtest)
+## Worked example (build-step 1: SLX, TimesFM 2.5 + CQR)
 
-> This section is intentionally a placeholder until the first end-to-end backtest is
-> run. It will hold **one dated, falsifiable example**:
->
-> - the calibrated forecast interval for the target series as of date `T`,
-> - the Federal Register tariff notice on date `T+k`,
-> - the actual price move and the interval breach,
-> - the attributed driver and the **lead time** the system would have given.
->
-> No results are shown here yet because none have been produced. Nothing in this
-> section is fabricated.
+First end-to-end forecast, run on real `SLX` closes (2016-01-04 to 2026-07-08) with
+**TimesFM 2.5** zero-shot and a **split-conformal (CQR)** calibrated interval.
+
+![SLX TimesFM 2.5 forecast with conformal-calibrated interval](outputs/figures/slx_timesfm_calibrated_interval.png)
+
+**Interval calibration (the point of the exercise).** Across held-out rolling origins:
+
+| Interval | Empirical coverage |
+| --- | --- |
+| TimesFM raw q10-q90 band (nominal 80%) | 79.2% |
+| CQR-calibrated (target 90%) | 91.5% |
+
+TimesFM's raw deciles are already close to calibrated at 80%; CQR adds a data-driven
+offset of `Q = 1.55` (USD) to the band to reach the 90% target. That is what turns a
+forecast into a risk signal with a coverage guarantee.
+
+**Point accuracy (honest baseline check).** 10-business-day-ahead MASE on the test origins:
+
+| Model | MASE |
+| --- | --- |
+| Seasonal-naive | 4.21 |
+| ARIMA(1,1,1) | 4.22 |
+| TimesFM 2.5 | 4.33 |
+
+For a liquid, near-random-walk ETF at daily frequency, point forecasting barely beats a
+random walk, and TimesFM lands marginally behind naive here. That is the expected result
+and it is stated plainly: the value of this system is the **calibrated interval** and
+(next) **event attribution**, not point accuracy on an efficient price series.
+
+**Headline holdout.** Forecasting the 10 business days from 2026-06-24, the actual `SLX`
+path (which fell from ~101 to ~97) stayed inside the calibrated 90% interval throughout:
+**0 breaches**. A breach is exactly the signal the next build steps (event monitor plus
+attribution) are designed to act on.
+
+> Reproduce: `./.venv/Scripts/python.exe scripts/step1_forecast_slx.py`
+> (all numbers in [`outputs/step1_summary.json`](outputs/step1_summary.json)).
 
 ---
 
 ## How it works
 
 ```
-numeric series --> Chronos-2 (zero-shot) --> conformal wrapper --> calibrated interval
+numeric series --> TimesFM 2.5 (zero-shot) --> CQR conformal --> calibrated interval
                                                                           |
 event stream  --> embeddings + severity tags --> relevance/timing --------+
                                                                           v
@@ -45,7 +71,7 @@ plan, risk register) lives in [`docs/Tariff_Shock_EWS_Solution_Design.xlsx`](doc
 ```
 config/    per-vertical configuration (steel.yaml)
 src/data/  ingestion: prices, trade volumes, events
-src/forecast/  Chronos-2 zero-shot forecast + conformal calibration
+src/forecast/  TimesFM 2.5 zero-shot forecast + conformal (CQR) calibration
 src/events/    event embedding, severity tagging, attribution
 src/detect/    changepoint detection (cross-check)
 src/eval/      rolling-origin backtest + event early-warning evaluation

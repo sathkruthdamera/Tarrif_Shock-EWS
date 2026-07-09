@@ -42,8 +42,8 @@ events:
 
 forecast:
   horizon_days: 10           # forecast horizon
-  context_days: 512          # history fed to the foundation model
-  quantiles: [0.05, 0.5, 0.95]
+  context_days: 1024         # history fed to the foundation model (TimesFM max_context)
+  quantiles: [0.1, 0.5, 0.9] # TimesFM deciles; CQR widens q10/q90 to the 90% target
 
 calibration:
   method: split_conformal
