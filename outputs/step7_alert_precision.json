@@ -1,0 +1,43 @@
+{
+  "symbol": "HRC=F",
+  "framing": "filters F1/F2 were pre-specified in the design doc Build Log BEFORE evaluation (persistence-filter practice per Kaminsky-Lizondo-Reinhart); evaluated on the step-5 forward window; n=1 shock -> case-study numbers guiding config defaults, not validated rates",
+  "forward_window": "2024-07-01 to 2026-07-02",
+  "shock_onsets": [
+    "2025-02-26"
+  ],
+  "variants": [
+    {
+      "variant": "baseline (no filter)",
+      "n_flags": 55,
+      "recall": "1/1",
+      "precision": 0.0364,
+      "median_lead_days": 0.0,
+      "klr_noise_to_signal": 0.837
+    },
+    {
+      "variant": "F1 changepoint +/-7d",
+      "n_flags": 6,
+      "recall": "1/1",
+      "precision": 0.3333,
+      "median_lead_days": 0.0,
+      "klr_noise_to_signal": 0.078
+    },
+    {
+      "variant": "F2 run>=2 days",
+      "n_flags": 31,
+      "recall": "0/1",
+      "precision": 0.0323,
+      "median_lead_days": null,
+      "klr_noise_to_signal": null
+    },
+    {
+      "variant": "F1+F2 combined",
+      "n_flags": 4,
+      "recall": "0/1",
+      "precision": 0.25,
+      "median_lead_days": null,
+      "klr_noise_to_signal": null
+    }
+  ],
+  "config_decision": "expose alert_filters.min_breach_run and alert_filters.require_changepoint in config; defaults chosen from these numbers and documented in the README"
+}

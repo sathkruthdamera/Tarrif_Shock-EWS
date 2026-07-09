@@ -204,6 +204,29 @@ cost: most ACI flags mark small abnormal moves that never become sustained shock
 Improving precision (e.g. requiring changepoint agreement or multi-day breach runs
 before alerting) is logged as future work rather than tuned post-hoc here.
 
+## Alert-precision filters (pre-specified, then evaluated)
+
+The two candidate filters above were **pre-specified in the design doc before any
+evaluation** (persistence-filter practice from the Kaminsky-Lizondo-Reinhart signals
+literature), then evaluated on the same forward window
+(`scripts/step7_alert_precision.py`, numbers in
+[`outputs/step7_alert_precision.json`](outputs/step7_alert_precision.json)):
+
+| Variant | Flags | Recall | Precision | KLR noise-to-signal |
+| --- | --- | --- | --- | --- |
+| Baseline (no filter) | 55 | 1/1 | 3.6% | 0.837 |
+| **F1: changepoint within +/-7d** | **6** | **1/1** | **33.3%** | **0.078** |
+| F2: breach run >= 2 days | 31 | 0/1 | 3.2% | undefined |
+| F1 + F2 | 4 | 0/1 | 25.0% | undefined |
+
+**F1 wins decisively and F2 is actively harmful**: requiring a second consecutive breach
+day dropped the only true positive, because the Feb-2025 shock was a one-day gap that
+ACI re-absorbed immediately, a concrete reminder that persistence filters miss gap-style
+shocks. The live pipeline now ships with `alert_filters.require_changepoint: true`
+(noise-to-signal cut 10x, recall preserved) and `min_breach_run: 1` (F2 disabled), both
+exposed in `config/steel.yaml`. Caveat carried forward: the window contains one shock,
+so this is case-study evidence guiding a default, to be revisited as more shocks accrue.
+
 ---
 
 ## How it works

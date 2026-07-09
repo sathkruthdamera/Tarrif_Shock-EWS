@@ -48,6 +48,7 @@ class Alert:
     changepoint_agrees: bool
     garch_agrees: bool
     aci_coverage: float
+    breach_run: int = 1
     drivers: list[AttributedEvent] = field(default_factory=list)
 
     def summary(self) -> str:
@@ -134,6 +135,14 @@ def run(cfg: dict) -> list[Alert]:
     g_lo, g_hi = (garch_band(target.iloc[:-horizon], horizon, cal["target_coverage"])
                   if cal.get("garch_cross_check", True) else (None, None))
 
+    # alert filters, forward-evaluated in scripts/step7_alert_precision.py:
+    # F1 (changepoint agreement) cut noise-to-signal 10x with recall preserved -> default ON;
+    # F2 (min_breach_run>=2) dropped the only true positive (gap-style shock) -> default OFF.
+    filt = cfg.get("alert_filters", {})
+    require_cp = filt.get("require_changepoint", False)
+    cp_tol = filt.get("changepoint_tol_days", 7)
+    min_run = filt.get("min_breach_run", 1)
+
     embedder = EventEmbedder()
     alerts: list[Alert] = []
     for j, i in enumerate(recent):
@@ -143,13 +152,20 @@ def run(cfg: dict) -> list[Alert]:
         y = bands.loc[i, "actual"]
         lo_i = bands.loc[i, "lo"] - offsets[i]
         hi_i = bands.loc[i, "hi"] + offsets[i]
+        run = 1
+        while i - run >= 0 and not covered[i - run]:
+            run += 1
+        cp_agrees = changepoint.agrees_with_breach(cps, d, tol_days=cp_tol)
+        if (require_cp and not cp_agrees) or run < min_run:
+            continue
         garch_agrees = bool(g_lo is not None and (y < g_lo[j] or y > g_hi[j]))
         alerts.append(Alert(
             breach_date=d, actual=float(y), lower=float(lo_i), upper=float(hi_i),
             direction="down" if y < lo_i else "up",
-            changepoint_agrees=changepoint.agrees_with_breach(cps, d, tol_days=7),
+            changepoint_agrees=cp_agrees,
             garch_agrees=garch_agrees,
             aci_coverage=aci["realized_coverage"],
+            breach_run=run,
             drivers=attribute_break(d, event_table, cfg, embedder),
         ))
     return alerts

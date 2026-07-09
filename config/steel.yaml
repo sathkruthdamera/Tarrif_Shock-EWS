@@ -60,6 +60,15 @@ calibration:
   history_blocks: 60         # trailing non-overlapping H-day blocks kept as ACI history
   garch_cross_check: true    # GARCH(1,1) band as an independent width cross-check
 
+# Alert filters, evaluated forward in scripts/step7 (pre-specified in the Build Log):
+# F1 changepoint agreement kept recall 1/1 while cutting noise-to-signal 10x (0.84->0.08);
+# F2 (min_breach_run=2) dropped the only true positive (gap-style shock), so it stays off.
+# n=1 shock in the eval window: case-study evidence, revisit as more shocks accrue.
+alert_filters:
+  require_changepoint: true  # F1: suppress alerts with no changepoint within +/-7d
+  changepoint_tol_days: 7
+  min_breach_run: 1          # F2 evaluated harmful; 1 = disabled
+
 detection:
   changepoint_method: pelt   # or: bocpd
   cost_model: l2             # l2 on rolling volatility finds regime breaks
