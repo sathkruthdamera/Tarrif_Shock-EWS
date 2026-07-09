@@ -199,11 +199,20 @@ outputs/    generated figures
 ## Getting started
 
 ```bash
-# Python 3.11+
+# Python 3.10-3.12 (torch/timesfm wheels; 3.13+ not yet supported)
 pip install -e .            # or: uv pip install -e .
-cp .env.example .env        # add FRED_API_KEY, CENSUS_API_KEY (both free)
+cp .env.example .env        # optional: FRED_API_KEY, CENSUS_API_KEY (both free);
+                            # the pipeline runs without them (macro context skipped)
 python -m src.pipeline --config config/steel.yaml
 ```
+
+The pipeline is the production path proven by the validation scripts: it maintains an
+incremental cache of TimesFM quantile bands (`data/bands_<vertical>.parquet`, only new
+blocks are forecast each run), calibrates **online with ACI** (regime-robust, per the
+step-3 study), and emits alerts for current-block breaches with three context signals
+on each alert: `changepoint_agrees`, `garch_agrees` (independent GARCH(1,1) band), and
+the realized ACI coverage. Attribution on alerts is candidate-surfacing with a Federal
+Register link, not a causal claim (per the step-4 permutation result).
 
 ## Data sources (all free / public)
 

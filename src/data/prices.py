@@ -32,7 +32,9 @@ def load_target(symbol: str, field: str = "Close", start: str = "2015-01-01") ->
     df = yf.download(symbol, start=start, auto_adjust=True, progress=False)
     if df.empty:
         raise RuntimeError(f"No data returned for {symbol!r}")
-    s = df[field].rename(symbol)
+    col = df[field]
+    # yfinance returns MultiIndex columns (field, ticker) for single tickers too
+    s = (col.iloc[:, 0] if hasattr(col, "columns") else col).rename(symbol)
     s.index = pd.to_datetime(s.index)
     return s.asfreq("B").ffill()
 
@@ -53,9 +55,18 @@ def load_fred(series_ids: dict[str, str], start: str = "2015-01-01") -> pd.DataF
 
 
 def build_price_panel(cfg: dict, cache: bool = True) -> pd.DataFrame:
-    """Assemble target + macro into one daily panel and optionally cache to parquet."""
+    """Assemble target + macro into one daily panel and optionally cache to parquet.
+
+    Macro context is optional in v1 (it becomes covariates in v2): without a
+    FRED_API_KEY the panel is just the target series, with a warning.
+    """
     target = load_target(cfg["target"]["symbol"], cfg["target"].get("field", "Close"))
-    macro = load_fred(cfg.get("macro", {}))
+    if os.environ.get("FRED_API_KEY"):
+        macro = load_fred(cfg.get("macro", {}))
+    else:
+        import warnings
+        warnings.warn("FRED_API_KEY not set; building panel without macro context")
+        macro = pd.DataFrame(index=target.index)
     panel = pd.concat([target, macro], axis=1).ffill().dropna(how="all")
     if cache:
         DATA_DIR.mkdir(parents=True, exist_ok=True)

@@ -1,11 +1,18 @@
-"""Orchestration: forecast -> monitor -> attribute -> alert.
+"""Orchestration: forecast -> monitor -> attribute -> alert (production path).
 
-Ties the layers together for one vertical:
+Daily-batch pipeline for one vertical, using the components proven in the
+validation scripts (steps 1-5):
+
   1. ingest price + event data,
-  2. produce a calibrated forecast interval (Chronos-2 + conformal),
-  3. monitor actuals for interval breaches (with a changepoint cross-check),
-  4. attribute each breach to the most likely event,
-  5. emit an early-warning alert.
+  2. maintain a cached history of TimesFM quantile bands over trailing
+     non-overlapping H-day blocks (only new blocks are recomputed each run),
+  3. calibrate ONLINE with Adaptive Conformal Inference (ACI, Gibbs & Candes
+     2021), which holds target coverage through volatility regimes where a
+     fixed split-conformal offset drifts (proven in scripts/step3),
+  4. flag breaches in the most recent block; cross-check each against a
+     GARCH(1,1) volatility band and volatility-regime changepoints,
+  5. attribute each breach to candidate events (verifiable candidate-surfacing,
+     NOT a causal claim; see the step-4 permutation result) and emit alerts.
 """
 from __future__ import annotations
 
@@ -13,6 +20,7 @@ import argparse
 from dataclasses import dataclass, field
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import yaml
 from dotenv import load_dotenv
@@ -22,10 +30,12 @@ from src.data import prices as prices_mod
 from src.detect import changepoint
 from src.events.attribute import AttributedEvent, attribute_break
 from src.events.embed import EventEmbedder
-from src.forecast.conformal import ConformalCalibrator
+from src.eval.backtest import garch_band
+from src.forecast.conformal import aci_cqr
 from src.forecast.timesfm_model import TimesFMForecaster
 
 ROOT = Path(__file__).resolve().parents[1]
+DATA_DIR = ROOT / "data"
 
 
 @dataclass
@@ -34,16 +44,22 @@ class Alert:
     actual: float
     lower: float
     upper: float
+    direction: str
     changepoint_agrees: bool
+    garch_agrees: bool
+    aci_coverage: float
     drivers: list[AttributedEvent] = field(default_factory=list)
 
     def summary(self) -> str:
         top = self.drivers[0] if self.drivers else None
-        driver = f"{top.title} ({top.source_url})" if top else "no candidate event found"
+        driver = (f"{top.title} ({top.published.date()}, {top.source_url})"
+                  if top else "no candidate event in window")
         return (
             f"[EWS ALERT] {self.breach_date.date()}: actual={self.actual:.2f} "
-            f"outside [{self.lower:.2f}, {self.upper:.2f}] | "
-            f"changepoint_agrees={self.changepoint_agrees} | driver: {driver}"
+            f"{self.direction} outside [{self.lower:.2f}, {self.upper:.2f}] | "
+            f"changepoint_agrees={self.changepoint_agrees} "
+            f"garch_agrees={self.garch_agrees} | "
+            f"ACI coverage={self.aci_coverage:.1%} | candidate driver: {driver}"
         )
 
 
@@ -51,45 +67,91 @@ def load_config(path: str | Path) -> dict:
     return yaml.safe_load(open(path))
 
 
+def _band_history(series: pd.Series, cfg: dict,
+                  forecaster: TimesFMForecaster) -> pd.DataFrame:
+    """Cached per-day quantile bands over trailing non-overlapping H-day blocks.
+
+    Cache lives at data/bands_<vertical>.parquet; each run only computes blocks
+    whose dates are not yet cached, so the daily batch costs one forecast.
+    """
+    fcfg = cfg["forecast"]
+    horizon = fcfg["horizon_days"]
+    n_blocks = cfg["calibration"].get("history_blocks", 60)
+    quantiles = fcfg["quantiles"]
+
+    cache_path = DATA_DIR / f"bands_{cfg['vertical']}.parquet"
+    cached = pd.read_parquet(cache_path) if cache_path.exists() else pd.DataFrame()
+    have = set(pd.to_datetime(cached["date"])) if len(cached) else set()
+
+    last_origin = len(series) - horizon
+    origins = [last_origin - k * horizon for k in range(n_blocks)][::-1]
+    origins = [t for t in origins if t > horizon]
+
+    rows = []
+    for t in origins:
+        block = series.iloc[t:t + horizon]
+        if all(d in have for d in block.index):
+            continue
+        fc = forecaster.forecast(series.iloc[:t], horizon, quantiles)
+        for j, (d, y) in enumerate(block.items()):
+            rows.append({"date": d, "lo": float(fc.q(quantiles[0]).iloc[j]),
+                         "median": float(fc.q(0.5).iloc[j]),
+                         "hi": float(fc.q(quantiles[-1]).iloc[j]),
+                         "actual": float(y)})
+    if rows:
+        cached = (pd.concat([cached, pd.DataFrame(rows)], ignore_index=True)
+                  .drop_duplicates(subset=["date"], keep="last"))
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        cached.to_parquet(cache_path)
+    cached["date"] = pd.to_datetime(cached["date"])
+    keep_from = series.index[origins[0]]
+    return cached[cached["date"] >= keep_from].sort_values("date").reset_index(drop=True)
+
+
 def run(cfg: dict) -> list[Alert]:
-    """Run the end-to-end pipeline for one vertical and return any alerts."""
+    """Run the end-to-end production pipeline for one vertical; return alerts."""
+    cal, fcfg, det = cfg["calibration"], cfg["forecast"], cfg["detection"]
+    horizon = fcfg["horizon_days"]
+
     panel = prices_mod.build_price_panel(cfg)
     target = panel[cfg["target"]["symbol"]].dropna()
     event_table = events_mod.build_event_table(cfg)
 
-    fcfg, cal = cfg["forecast"], cfg["calibration"]
-    forecaster = TimesFMForecaster()
-    calibrator = ConformalCalibrator(
-        forecaster,
-        target_coverage=cal["target_coverage"],
-        calib_fraction=cal["calib_fraction"],
-    )
+    forecaster = TimesFMForecaster(max_context=fcfg.get("context_days", 1024),
+                                   max_horizon=max(64, horizon))
+    bands = _band_history(target, cfg, forecaster)
 
-    history = target.iloc[: -fcfg["horizon_days"]]
-    actual = target.iloc[-fcfg["horizon_days"]:]
-    interval = calibrator.predict(history, fcfg["horizon_days"], fcfg["quantiles"])
+    # ACI online over the whole cached history (no lookahead by construction)
+    aci = aci_cqr(bands["lo"].to_numpy(), bands["hi"].to_numpy(),
+                  bands["actual"].to_numpy(), cal["target_coverage"],
+                  gamma=cal.get("gamma", 0.02), warmup=cal.get("warmup_days", 50))
+    covered, offsets = aci["covered"], aci["offset"]
 
-    breaches = interval.breaches(actual)
-    residuals = (actual.reindex(interval.index) - interval.to_frame()["median"])
-    cps = changepoint.detect(residuals, cfg) if breaches.any() else []
+    # alert only on the most recent block, and never inside the warmup
+    recent = bands.index[-horizon:]
+    cps = changepoint.volatility_changepoints(
+        target, window=det.get("vol_window", 20), penalty=det.get("penalty", 8.0))
+    g_lo, g_hi = (garch_band(target.iloc[:-horizon], horizon, cal["target_coverage"])
+                  if cal.get("garch_cross_check", True) else (None, None))
 
     embedder = EventEmbedder()
     alerts: list[Alert] = []
-    frame = interval.to_frame()
-    for date, is_breach in breaches.items():
-        if not is_breach:
+    for j, i in enumerate(recent):
+        if i < aci["warmup"] or covered[i]:
             continue
-        drivers = attribute_break(date, event_table, cfg, embedder)
-        alerts.append(
-            Alert(
-                breach_date=date,
-                actual=float(actual.reindex(interval.index)[date]),
-                lower=float(frame.loc[date, "lower"]),
-                upper=float(frame.loc[date, "upper"]),
-                changepoint_agrees=changepoint.agrees_with_breach(cps, date),
-                drivers=drivers,
-            )
-        )
+        d = bands.loc[i, "date"]
+        y = bands.loc[i, "actual"]
+        lo_i = bands.loc[i, "lo"] - offsets[i]
+        hi_i = bands.loc[i, "hi"] + offsets[i]
+        garch_agrees = bool(g_lo is not None and (y < g_lo[j] or y > g_hi[j]))
+        alerts.append(Alert(
+            breach_date=d, actual=float(y), lower=float(lo_i), upper=float(hi_i),
+            direction="down" if y < lo_i else "up",
+            changepoint_agrees=changepoint.agrees_with_breach(cps, d, tol_days=7),
+            garch_agrees=garch_agrees,
+            aci_coverage=aci["realized_coverage"],
+            drivers=attribute_break(d, event_table, cfg, embedder),
+        ))
     return alerts
 
 
@@ -102,7 +164,7 @@ def main() -> None:
     cfg = load_config(args.config)
     alerts = run(cfg)
     if not alerts:
-        print("No interval breaches in the evaluation window.")
+        print("No interval breaches in the most recent block (post-warmup).")
     for a in alerts:
         print(a.summary())
 
