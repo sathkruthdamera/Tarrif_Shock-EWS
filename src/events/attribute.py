@@ -44,12 +44,14 @@ def attribute_break(
     w = acfg["weights"]
     top_k = acfg.get("top_k", 3)
 
+    published = pd.to_datetime(events["published"], errors="coerce")
     window = events[
-        (events["published"] <= breach_date)
-        & (events["published"] >= breach_date - pd.Timedelta(days=lookback))
+        (published <= breach_date)
+        & (published >= breach_date - pd.Timedelta(days=lookback))
     ].copy()
     if window.empty:
         return []
+    window["published"] = pd.to_datetime(window["published"], errors="coerce")
 
     embedder = embedder or EventEmbedder()
     prototypes = cfg["events"]["shock_prototypes"]

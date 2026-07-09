@@ -20,6 +20,9 @@ RULES: list[tuple[str, float]] = [
     (r"\b(\d{2,3})\s*%", 0.4),          # explicit high tariff percentage
     (r"export (control|restriction|ban)", 0.4),
     (r"quota|suspension|revoke", 0.3),
+    # Section 232 steel proclamations carry this exact language but rarely the word
+    # "tariff" in the title/abstract; score them so key events are not missed.
+    (r"adjusting imports|proclamation|increase the (duty|tariff)", 0.35),
 ]
 
 

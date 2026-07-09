@@ -1,0 +1,35 @@
+{
+  "symbol": "SLX",
+  "scan_from": "2018-06-01",
+  "data_end": "2026-07-08",
+  "framing": "retrospective attribution (full-sample CQR), not forward early-warning",
+  "n_events": 255,
+  "cqr_offset": 0.7334,
+  "realized_coverage": 0.9009,
+  "n_breach_days": 209,
+  "total_days_scanned": 2110,
+  "n_breaches_with_event": 151,
+  "event_density_base_rate": 0.6597,
+  "hit_rate_note": "hit-rate is near the base rate: events are dense, so co-occurrence is largely density-driven, not evidence of causal attribution",
+  "n_changepoints": 18,
+  "best_proclamation_example": {
+    "breach_date": "2022-06-13",
+    "direction": "down",
+    "actual": 48.43,
+    "interval": [
+      48.88,
+      56.0
+    ],
+    "changepoint_agrees": false,
+    "attributed_event": {
+      "title": "Adjusting Imports of Steel Into the United States",
+      "published": "2022-06-03",
+      "source_url": "https://www.federalregister.gov/documents/2022/06/03/2022-12108/adjusting-imports-of-steel-into-the-united-states",
+      "relevance": 0.639,
+      "severity": 0.35,
+      "recency": 0.286,
+      "score": 0.482
+    }
+  },
+  "figure": "outputs/figures/slx_breaches_attribution.png"
+}

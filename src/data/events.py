@@ -17,24 +17,48 @@ FR_URL = "https://www.federalregister.gov/api/v1/documents.json"
 EVENT_COLUMNS = ["published", "agency", "title", "text", "source_url", "origin"]
 
 
-def load_federal_register(agencies: list[str], keywords: list[str],
-                          start: str = "2015-01-01") -> pd.DataFrame:
+_FR_FIELDS = ["title", "abstract", "publication_date", "agency_names", "html_url", "type"]
+
+
+def _fr_query(term: str, document_types: list[str], start: str,
+              max_events: int) -> list[dict]:
+    """Page through the Federal Register API for one search term."""
+    out: list[dict] = []
+    page = 1
+    while len(out) < max_events:
+        params = [
+            ("conditions[term]", term),
+            ("conditions[publication_date][gte]", start),
+            ("per_page", 100),
+            ("page", page),
+            ("order", "newest"),
+        ]
+        params += [("conditions[type][]", t) for t in document_types]
+        params += [("fields[]", f) for f in _FR_FIELDS]
+        resp = requests.get(FR_URL, params=params, timeout=60)
+        resp.raise_for_status()
+        results = resp.json().get("results", [])
+        if not results:
+            break
+        out.extend(results)
+        page += 1
+    return out[:max_events]
+
+
+def load_federal_register(terms: list[str], document_types: list[str],
+                          start: str = "2016-01-01",
+                          max_events: int = 300) -> pd.DataFrame:
     """Query the Federal Register for tariff/trade documents.
 
+    Queries each focused ``term`` (e.g. "Section 232 steel tariff") restricted to
+    high-signal ``document_types`` (Presidential documents, rules, notices), then
+    de-duplicates by URL. Restricting by document type instead of agency is what keeps
+    the canonical Section 232 steel *proclamations* (Presidential documents) in scope.
     Returns a normalized event DataFrame (see ``EVENT_COLUMNS``), origin=``federal_register``.
     """
-    term = " OR ".join(keywords)
-    params = {
-        "conditions[term]": term,
-        "conditions[agencies][]": agencies,
-        "conditions[publication_date][gte]": start,
-        "per_page": 1000,
-        "order": "newest",
-        "fields[]": ["title", "abstract", "publication_date", "agency_names", "html_url"],
-    }
-    resp = requests.get(FR_URL, params=params, timeout=60)
-    resp.raise_for_status()
-    docs = resp.json().get("results", [])
+    docs: list[dict] = []
+    for term in terms:
+        docs.extend(_fr_query(term, document_types, start, max_events))
     rows = [
         {
             "published": pd.to_datetime(d.get("publication_date")),
@@ -46,7 +70,8 @@ def load_federal_register(agencies: list[str], keywords: list[str],
         }
         for d in docs
     ]
-    return pd.DataFrame(rows, columns=EVENT_COLUMNS)
+    df = pd.DataFrame(rows, columns=EVENT_COLUMNS)
+    return df.drop_duplicates(subset=["source_url"]).reset_index(drop=True)
 
 
 def load_news(keywords: list[str], start: str = "2015-01-01") -> pd.DataFrame:
@@ -61,13 +86,18 @@ def load_news(keywords: list[str], start: str = "2015-01-01") -> pd.DataFrame:
 def build_event_table(cfg: dict, cache: bool = True) -> pd.DataFrame:
     """Assemble the normalized event table from all configured sources."""
     ev = cfg["events"]
+    frcfg = ev["federal_register"]
     fr = load_federal_register(
-        ev["federal_register"]["agencies"], ev["federal_register"]["keywords"]
+        frcfg["terms"], frcfg["document_types"],
+        start=frcfg.get("start", "2016-01-01"),
+        max_events=frcfg.get("max_events", 300),
     )
     news = load_news(ev.get("news", {}).get("keywords", []))
+    table = pd.concat([fr, news], ignore_index=True)
+    # concat with an empty news frame can coerce the datetime column to object; restore it
+    table["published"] = pd.to_datetime(table["published"], errors="coerce")
     table = (
-        pd.concat([fr, news], ignore_index=True)
-        .dropna(subset=["published"])
+        table.dropna(subset=["published"])
         .sort_values("published")
         .reset_index(drop=True)
     )

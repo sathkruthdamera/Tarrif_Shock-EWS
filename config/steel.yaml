@@ -26,11 +26,18 @@ shipping:
 
 events:
   # Federal Register query anchors (authoritative, timestamped).
+  # Focused terms + high-signal document types (Presidential proclamations, rules,
+  # notices). Restricting by type, not agency, keeps the Section 232 steel
+  # proclamations (Presidential documents) in scope.
+  # Proclamations (PRESDOCU) + rules (RULE) are few and complete across all years,
+  # so they span 2018-2026 without the newest-N cap crowding out old events. NOTICE-type
+  # antidumping/countervailing determinations are high-volume and low-signal for price
+  # shocks, so they are deliberately excluded from v1 (a known precision/recall tradeoff).
   federal_register:
-    agencies: ["international-trade-administration", "commerce-department",
-               "trade-representative-office-of-united-states"]
-    keywords: ["steel", "section 232", "section 301", "tariff", "antidumping",
-               "countervailing", "duty"]
+    terms: ["steel 232 tariff", "adjusting imports of steel"]
+    document_types: ["PRESDOCU", "RULE"]
+    start: "2017-01-01"
+    max_events: 250
   news:
     keywords: ["steel tariff", "steel import", "trade dispute", "export control"]
   # Prototype "shock" sentences that events are scored against for relevance.
@@ -52,7 +59,9 @@ calibration:
 
 detection:
   changepoint_method: pelt   # or: bocpd
-  penalty: 10                # PELT penalty
+  cost_model: l2             # l2 on rolling volatility finds regime breaks
+  vol_window: 20             # rolling window (days) for volatility
+  penalty: 8                 # PELT penalty (tuned to ~14 regime breaks over 2017-2026)
   breach_min_run: 1          # consecutive out-of-interval points to flag
 
 attribution:

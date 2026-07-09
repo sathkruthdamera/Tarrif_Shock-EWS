@@ -51,6 +51,33 @@ attribution) are designed to act on.
 > Reproduce: `./.venv/Scripts/python.exe scripts/step1_forecast_slx.py`
 > (all numbers in [`outputs/step1_summary.json`](outputs/step1_summary.json)).
 
+## Worked example (build-step 2: event attribution, retrospective)
+
+Wires real Federal Register steel-tariff proclamations to interval breaches. Over SLX
+2018-2026, non-overlapping 10-day forecasts were calibrated to 90% coverage (full-sample
+CQR, realized **90.1%**); the ~10% of days still outside the band are flagged as breaches
+(**209 / 2110**) and each is attributed to the most likely event
+(relevance x severity x recency).
+
+![SLX retrospective breaches and attribution](outputs/figures/slx_breaches_attribution.png)
+
+**Dated, verifiable example.** The 2022-06-13 breach (SLX fell to $48.43, below the
+$48.88 calibrated floor) attributes to the
+[2022-06-03 "Adjusting Imports of Steel" proclamation](https://www.federalregister.gov/documents/2022/06/03/2022-12108/adjusting-imports-of-steel-into-the-united-states)
+(relevance 0.64, published 10 days before the breach).
+
+**Honest limitation (do not oversell this).** 72% of breaches had a steel-tariff event
+within 14 days, but so did **66% of all scanned days**. Events are dense (255 over 8
+years, concentrated in 2024-2026), so co-occurrence is largely density-driven, not strong
+causal evidence. The attribution surfaces a temporally plausible, verifiable candidate
+with a source link for a human to judge; it is **not** a causal identification. Sharpening
+it (tighter windows, high-severity-only events, less-efficient targets like HRC futures)
+is the next work. 18 volatility-regime changepoints (blue) independently mark the 2020
+crash and 2022/2025 turmoil as a confidence cross-check.
+
+> Reproduce: `./.venv/Scripts/python.exe scripts/step2_events_attribution.py`
+> (all numbers in [`outputs/step2_summary.json`](outputs/step2_summary.json)).
+
 ---
 
 ## How it works

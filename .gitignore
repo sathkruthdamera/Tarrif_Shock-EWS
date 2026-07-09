@@ -6,6 +6,7 @@
 # and ARE committed; only heavy intermediate artifacts are ignored.
 /outputs/**/*.pdf
 /outputs/**/*.parquet
+/outputs/cache/
 
 # Secrets
 .env

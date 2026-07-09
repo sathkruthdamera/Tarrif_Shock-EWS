@@ -9,15 +9,32 @@ import numpy as np
 import pandas as pd
 
 
-def detect_pelt(residuals: pd.Series, penalty: float = 10.0) -> list[pd.Timestamp]:
-    """Detect changepoints via PELT (ruptures). Returns changepoint timestamps."""
+def detect_pelt(signal: pd.Series, penalty: float = 10.0,
+                model: str = "rbf") -> list[pd.Timestamp]:
+    """Detect changepoints via PELT (ruptures). Returns changepoint timestamps.
+
+    ``model`` is the ruptures cost: "l2" (mean shift, good on price/volatility levels)
+    or "rbf" (distributional). For volatility-regime breaks, pass a rolling-std series
+    with ``model="l2"``; near-white-noise returns give no usable breaks.
+    """
     import ruptures as rpt
 
-    x = residuals.dropna().to_numpy()
-    algo = rpt.Pelt(model="rbf").fit(x)
+    x = signal.dropna().to_numpy()
+    algo = rpt.Pelt(model=model).fit(x)
     bkps = algo.predict(pen=penalty)          # indices (last point is len(x))
-    idx = residuals.dropna().index
+    idx = signal.dropna().index
     return [idx[b - 1] for b in bkps if 0 < b <= len(idx)]
+
+
+def volatility_changepoints(prices: pd.Series, window: int = 20,
+                            penalty: float = 8.0) -> list[pd.Timestamp]:
+    """Convenience: PELT changepoints on rolling return volatility (regime breaks).
+
+    Volatility is expressed in percent (x100) so the ``penalty`` is on a human-readable
+    scale; on the raw ~0.0x return-std scale the same penalty would suppress all breaks.
+    """
+    vol = prices.pct_change().rolling(window).std().dropna() * 100.0
+    return detect_pelt(vol, penalty=penalty, model="l2")
 
 
 def detect_bocpd(residuals: pd.Series, hazard: float = 1 / 100.0) -> list[pd.Timestamp]:
