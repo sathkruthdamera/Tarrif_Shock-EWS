@@ -23,6 +23,28 @@ def mase(actual: pd.Series, forecast: pd.Series, insample: pd.Series,
     return float(np.mean(np.abs(actual.values - forecast.values)) / denom)
 
 
+def garch_band(history: pd.Series, horizon: int, coverage: float = 0.90):
+    """GARCH(1,1) volatility interval baseline for an H-step price forecast.
+
+    Point path is a random walk (last price); the band widens with the cumulative
+    GARCH-forecast return variance. Returns ``(lower, upper)`` price arrays of
+    length ``horizon``. This is the classical volatility baseline the design's
+    gauntlet calls for, alongside seasonal-naive and ARIMA.
+    """
+    from arch import arch_model
+    from scipy.stats import norm
+
+    p0 = float(history.iloc[-1])
+    rets = 100.0 * np.log(history / history.shift(1)).dropna()
+    res = arch_model(rets, mean="Zero", vol="Garch", p=1, q=1).fit(disp="off")
+    fvar = res.forecast(horizon=horizon, reindex=False).variance.values[-1]  # pct^2 per step
+    cum_sd = np.sqrt(np.cumsum(fvar)) / 100.0                                 # log-return sd
+    z = float(norm.ppf(0.5 + coverage / 2.0))
+    lower = p0 * np.exp(-z * cum_sd)
+    upper = p0 * np.exp(z * cum_sd)
+    return lower, upper
+
+
 @dataclass
 class BacktestResult:
     coverage: float

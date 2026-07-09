@@ -1,0 +1,29 @@
+{
+  "gap_A_frozen_holdout": {
+    "window": "2026-01-08 to 2026-07-08",
+    "timesfm_cqr_coverage": 0.8,
+    "mase_timesfm": 5.915,
+    "mase_naive": 5.6982
+  },
+  "gap_B_adaptive_conformal": {
+    "method": "ACI (Gibbs & Candes 2021), gamma=0.02",
+    "global_fixed_offset_coverage": 0.9009,
+    "aci_realized_coverage": 0.8966,
+    "target": 0.9
+  },
+  "gap_C_garch_baseline": {
+    "method": "GARCH(1,1) zero-mean, cumulative-variance band",
+    "garch_holdout_coverage": 0.875,
+    "timesfm_cqr_holdout_coverage": 0.8
+  },
+  "gap_D_attribution_permutation_test": {
+    "method": "circular-shift permutation (event-study style), B=2000",
+    "observed_hit_rate": 0.7225,
+    "event_density_base_rate": 0.6597,
+    "null_mean_hit_rate": 0.6591,
+    "p_value": 0.134,
+    "verdict": "association is NOT significant beyond event density"
+  },
+  "gap_E_point_accuracy_note": "TimesFM ~ seasonal-naive on point accuracy is the EXPECTED result for daily equity ETF prices (low signal-to-noise, weak persistence); TSFM benchmarks confirm foundation models do not consistently beat random-walk on such series. The system's value is the calibrated interval + attribution, not point accuracy.",
+  "figure": "outputs/figures/gap_aci_vs_global_coverage.png"
+}

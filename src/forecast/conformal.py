@@ -120,3 +120,47 @@ def apply_cqr(index: pd.DatetimeIndex, lower: np.ndarray, median: np.ndarray,
         upper=np.asarray(upper, float) + offset,
         coverage_target=target_coverage,
     )
+
+
+# ---------------------------------------------------------------------------
+# Adaptive Conformal Inference (ACI), Gibbs & Candes (2021).
+# A single fixed CQR offset under-covers when volatility regimes shift (calm
+# calibration window -> crisis test window). ACI keeps target coverage online by
+# nudging the effective miscoverage level up when it just missed and down when it
+# just covered, so the interval widens in turbulent regimes and tightens in calm ones.
+# ---------------------------------------------------------------------------
+
+def aci_cqr(lower: np.ndarray, upper: np.ndarray, actual: np.ndarray,
+            target_coverage: float = 0.90, gamma: float = 0.02,
+            warmup: int = 50) -> dict:
+    """Run ACI over a time-ordered sequence of CQR bands.
+
+    At each step the offset is the empirical ``1 - alpha_t`` quantile of past
+    nonconformity scores ``E = max(lower - y, y - upper)``; ``alpha_t`` is updated
+    online by ``alpha_{t+1} = alpha_t + gamma * (alpha - err_t)``.
+
+    Returns a dict with per-step ``covered`` / ``offset`` arrays and the realized
+    coverage after warmup.
+    """
+    lower = np.asarray(lower, float); upper = np.asarray(upper, float)
+    actual = np.asarray(actual, float)
+    scores = np.maximum(lower - actual, actual - upper)
+    n = len(actual)
+    alpha = 1.0 - target_coverage
+    a_t = alpha
+    covered = np.zeros(n, dtype=bool)
+    offsets = np.zeros(n)
+    for t in range(n):
+        past = scores[:t]
+        if len(past) == 0:
+            off = 0.0
+        else:
+            lvl = float(np.clip(1.0 - a_t, 0.0, 1.0))
+            off = float(np.quantile(past, lvl, method="higher"))
+        offsets[t] = off
+        covered[t] = (actual[t] >= lower[t] - off) and (actual[t] <= upper[t] + off)
+        err = 0.0 if covered[t] else 1.0
+        a_t = float(np.clip(a_t + gamma * (alpha - err), 0.0, 1.0))
+    realized = float(covered[warmup:].mean()) if n > warmup else float(covered.mean())
+    return {"covered": covered, "offset": offsets, "realized_coverage": realized,
+            "warmup": warmup}

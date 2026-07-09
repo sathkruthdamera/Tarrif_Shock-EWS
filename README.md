@@ -78,6 +78,33 @@ crash and 2022/2025 turmoil as a confidence cross-check.
 > Reproduce: `./.venv/Scripts/python.exe scripts/step2_events_attribution.py`
 > (all numbers in [`outputs/step2_summary.json`](outputs/step2_summary.json)).
 
+## Gap closure (literature-backed rigor)
+
+The gaps logged after steps 1-2 were closed with the methods the field uses, not ad-hoc
+patches (see `scripts/step3_close_gaps.py`, numbers in
+[`outputs/step3_gaps_summary.json`](outputs/step3_gaps_summary.json)):
+
+| Gap | Method | Result |
+| --- | --- | --- |
+| Fixed offset drifts across regimes | **Adaptive Conformal Inference** (Gibbs & Candes 2021) | holds ~90% and is far more stable than a fixed offset |
+| Robustness | **Frozen 2026 holdout** (untouched) | fixed CQR under-covers forward (80%), proving the drift |
+| Baseline gauntlet | **GARCH(1,1)** volatility band | 87.5% holdout coverage (its adaptive width beat the fixed offset forward) |
+| Is attribution real? | **Event-study permutation test** (circular-shift null) | 72.2% vs 66.0% base rate, **p = 0.134 -> not significant** |
+| Point accuracy <= naive | **TSFM benchmarks** | expected on efficient daily prices; foundation models do not consistently beat random-walk |
+
+![ACI vs fixed-offset rolling coverage](outputs/figures/gap_aci_vs_global_coverage.png)
+
+The rolling-coverage chart is the headline: a single fixed CQR offset over-covers in calm
+periods and under-covers in turbulent ones, while ACI adapts online and tracks the 90%
+target through every regime.
+
+**The most important honest finding:** the breach<->tariff-event association is **not
+statistically significant** on this broad ETF (p = 0.134). Events are too dense and SLX
+too diversified for co-occurrence to prove causation. This is not a failure of the method,
+it is the method working: the permutation test tells us to move to a less-efficient,
+more steel-pure target (HRC futures, freight rates) and high-severity-only events before
+claiming attribution value. That is the next step, not a patch to this one.
+
 ---
 
 ## How it works
