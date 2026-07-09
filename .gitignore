@@ -1,0 +1,28 @@
+# Data cache (raw + parquet) - keep the folder, ignore contents
+/data/*
+!/data/.gitkeep
+
+# Generated outputs - keep the folder tree, ignore heavy artifacts
+/outputs/**/*.png
+/outputs/**/*.pdf
+/outputs/**/*.parquet
+
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Tooling
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.DS_Store

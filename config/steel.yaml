@@ -1,0 +1,69 @@
+# Steel vertical configuration (v1).
+# All series IDs, HS codes, event keywords, and horizons live here so a new
+# vertical is just a new YAML file, no code changes.
+
+vertical: steel
+
+target:
+  # Primary forecast target. HRC futures are the ideal target; SLX (steel ETF)
+  # is the clean, liquid public proxy used for v1.
+  symbol: SLX          # yfinance ticker
+  field: Close
+  frequency: B         # business-day
+
+macro:                 # FRED series IDs used as context / v2 covariates
+  steel_ppi: WPU101    # PPI: iron and steel
+  industrial_production: INDPRO
+  import_price_index: IR
+  usd_index: DTWEXBGS   # trade-weighted USD index
+
+trade:                 # US Census international trade
+  hs_codes: ["72", "7208", "7210"]   # iron & steel, flat-rolled
+  flow: imports
+
+shipping:
+  index: FBX           # Freightos Baltic Index (container); Baltic Dry as fallback
+
+events:
+  # Federal Register query anchors (authoritative, timestamped).
+  federal_register:
+    agencies: ["international-trade-administration", "commerce-department",
+               "trade-representative-office-of-united-states"]
+    keywords: ["steel", "section 232", "section 301", "tariff", "antidumping",
+               "countervailing", "duty"]
+  news:
+    keywords: ["steel tariff", "steel import", "trade dispute", "export control"]
+  # Prototype "shock" sentences that events are scored against for relevance.
+  shock_prototypes:
+    - "New tariff imposed on steel imports effective immediately."
+    - "Section 232 duties on steel raised."
+    - "Antidumping duty order issued on steel products."
+    - "Export restrictions announced affecting steel supply."
+
+forecast:
+  horizon_days: 10           # forecast horizon
+  context_days: 512          # history fed to the foundation model
+  quantiles: [0.05, 0.5, 0.95]
+
+calibration:
+  method: split_conformal
+  target_coverage: 0.90      # nominal interval coverage
+  calib_fraction: 0.2        # tail of history held out for conformal calibration
+
+detection:
+  changepoint_method: pelt   # or: bocpd
+  penalty: 10                # PELT penalty
+  breach_min_run: 1          # consecutive out-of-interval points to flag
+
+attribution:
+  lookback_days: 14          # window of events considered for a breach
+  weights:                   # relevance x severity x recency
+    relevance: 0.5
+    severity: 0.3
+    recency: 0.2
+  top_k: 3
+
+backtest:
+  holdout_months: 6          # frozen holdout never seen in development
+  rolling: expanding         # rolling-origin scheme
+  step_days: 5

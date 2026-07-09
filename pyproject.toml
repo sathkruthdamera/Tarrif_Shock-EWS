@@ -1,0 +1,53 @@
+[project]
+name = "tariff-shock-ews"
+version = "0.1.0"
+description = "Tariff & Geopolitical Shock Early-Warning System for commodities/supply chains"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "sathkruthdamera" }]
+
+dependencies = [
+    # forecasting backbone
+    "chronos-forecasting>=1.4",     # Chronos-2 zero-shot time-series foundation model
+    "torch>=2.2",
+    # calibration
+    "mapie>=0.9",                   # split-conformal prediction intervals
+    # changepoint detection
+    "ruptures>=1.1",                # PELT; BOCPD as an alternative
+    # event reasoning
+    "sentence-transformers>=3.0",   # local embeddings for event relevance
+    # data access
+    "yfinance>=0.2.40",             # prices / SLX proxy
+    "fredapi>=0.5",                 # FRED macro series
+    "requests>=2.32",               # Federal Register + Census APIs
+    # core
+    "pandas>=2.2",
+    "numpy>=1.26",
+    "pyarrow>=16.0",                # parquet cache
+    "pyyaml>=6.0",                  # config
+    "python-dotenv>=1.0",           # .env secrets
+    "statsmodels>=0.14",            # ARIMA/GARCH baselines
+    "matplotlib>=3.8",              # figures
+]
+
+[project.optional-dependencies]
+dev = [
+    "jupyter>=1.0",
+    "ruff>=0.5",
+    "pytest>=8.0",
+]
+
+[project.scripts]
+tariff-ews = "src.pipeline:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
