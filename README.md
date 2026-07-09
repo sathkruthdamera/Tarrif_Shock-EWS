@@ -140,6 +140,32 @@ surfacing* (a temporally plausible event with a source link for a human to judge
 the causal early-warning claim is explicitly deferred until announcement-dated events
 exist. The permutation harness stays in place as the gate any future claim must pass.
 
+## Forward early-warning evaluation (G3, no lookahead)
+
+The design's forward eval (signals-approach EWS metrics via `src/eval/event_eval.py`),
+run on HRC=F over a 2024-07 to 2026-07 forward window with ACI online flags and a shock
+threshold fixed on pre-forward data only. A regime-adaptive rolling-2y threshold was run
+as sensitivity and identified the identical shock set. See
+`scripts/step5_forward_eval.py`, numbers in
+[`outputs/step5_forward_eval.json`](outputs/step5_forward_eval.json).
+
+| Metric (524 forward days, 55 flags) | Result |
+| --- | --- |
+| Shock onsets (10d move > 14.5%, p95 pre-forward) | **1** (2025-02-26) |
+| Recall (onset flagged within 10d up to onset) | 1/1, lead time 0d (flagged at onset) |
+| Precision (flags within +/-10d of an onset) | **3.6%** (honest false-alarm rate) |
+| Attribution candidate surfaced at onset | 1/1: the [2025-02-18 "Adjusting Imports of Steel" proclamation](https://www.federalregister.gov/documents/2025/02/18/2025-02833/adjusting-imports-of-steel-into-the-united-states), published 8 days before the shock |
+
+![HRC forward early-warning evaluation](outputs/figures/hrc_forward_early_warning.png)
+
+**Read this as a case study, not statistics: n = 1 shock.** The one genuine steel-price
+shock in the forward window (the Feb 2025 25% tariff reinstatement) was flagged the day
+it began, and the attribution engine surfaced the correct proclamation with its source
+link. But a single onset supports no rate claims, and the 3.6% precision is the honest
+cost: most ACI flags mark small abnormal moves that never become sustained shocks.
+Improving precision (e.g. requiring changepoint agreement or multi-day breach runs
+before alerting) is logged as future work rather than tuned post-hoc here.
+
 ---
 
 ## How it works

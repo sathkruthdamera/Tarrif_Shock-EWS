@@ -1,0 +1,41 @@
+{
+  "symbol": "HRC=F",
+  "framing": "forward split, no lookahead: ACI online flags; shock threshold fixed on pre-forward data; signals-approach EWS metrics",
+  "forward_window": "2024-07-01 to 2026-07-02",
+  "n_forward_days": 524,
+  "n_flags": 55,
+  "shock_definition": "trailing 10d |return| > 0.1451 (p95 pre-forward)",
+  "n_shock_onsets": 1,
+  "shock_onsets": [
+    "2025-02-26"
+  ],
+  "recall_onsets_warned": "1/1",
+  "precision_flags_near_onset": 0.0364,
+  "median_lead_time_days": 0.0,
+  "lead_times_days": [
+    0
+  ],
+  "sensitivity_rolling_2y_threshold": {
+    "n_shock_onsets": 1,
+    "shock_onsets": [
+      "2025-02-26"
+    ],
+    "recall_onsets_warned": "1/1",
+    "precision_flags_near_onset": 0.0364,
+    "median_lead_time_days": 0.0,
+    "lead_times_days": [
+      0
+    ]
+  },
+  "attribution_candidate_surfacing": "1/1",
+  "onset_candidates": {
+    "2025-02-26": {
+      "title": "Adjusting Imports of Steel Into the United States",
+      "published": "2025-02-18",
+      "source_url": "https://www.federalregister.gov/documents/2025/02/18/2025-02833/adjusting-imports-of-steel-into-the-united-states",
+      "score": 0.51
+    }
+  },
+  "note": "attribution reported as candidate-surfacing only (per gap-1 negative); precision counts flags within +/-10d of an onset, so isolated flags in calm stretches are honest false alarms",
+  "figure": "outputs/figures/hrc_forward_early_warning.png"
+}
