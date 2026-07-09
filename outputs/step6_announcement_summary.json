@@ -1,0 +1,47 @@
+{
+  "symbol": "HRC=F",
+  "event_source": "Daily TPU index (Caldara-Iacoviello et al., JME 2020) spike onsets; announcement-dated by construction",
+  "framing": "identical pre-registered design as step 4 (5d primary window, same ACI flags, same arbiter, seed 12345); only the event dating changed from FR publication to news announcement",
+  "n_announcement_events_z3": 79,
+  "aci_realized_coverage": 0.8995,
+  "n_breach_days": 207,
+  "primary_test": {
+    "observed": 0.0676,
+    "base": 0.09,
+    "null_mean": 0.0901,
+    "p_value": 0.845
+  },
+  "primary_significant_at_0.05": false,
+  "step4_fr_dated_comparison": {
+    "primary_p": 0.4605,
+    "note": "FR publication-dated"
+  },
+  "sensitivity": {
+    "z3_3d": {
+      "observed": 0.058,
+      "base": 0.0692,
+      "null_mean": 0.0687,
+      "p_value": 0.7185
+    },
+    "z3_10d": {
+      "observed": 0.1014,
+      "base": 0.1436,
+      "null_mean": 0.145,
+      "p_value": 0.9285
+    },
+    "z3_14d": {
+      "observed": 0.1353,
+      "base": 0.1806,
+      "null_mean": 0.18,
+      "p_value": 0.924
+    },
+    "z2_5d": {
+      "observed": 0.2077,
+      "base": 0.218,
+      "null_mean": 0.2192,
+      "p_value": 0.636
+    }
+  },
+  "gdelt_status": "implemented (src/data/news_gdelt.py) but public API hard-throttles multi-year pulls; retained as fallback",
+  "figure": "outputs/figures/hrc_breaches_tpu_announcements.png"
+}

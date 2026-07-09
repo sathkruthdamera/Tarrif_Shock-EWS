@@ -140,6 +140,44 @@ surfacing* (a temporally plausible event with a source link for a human to judge
 the causal early-warning claim is explicitly deferred until announcement-dated events
 exist. The permutation harness stays in place as the gate any future claim must pass.
 
+## Announcement-dated retest (TPU index): the null survives, and that settles it
+
+The step-4 diagnosis ("FR publication dates lag the announcement") was then actually
+tested. Announcement-dated events were built two ways:
+
+1. **Daily Trade Policy Uncertainty (TPU) index** (Caldara-Iacoviello et al., JME 2020),
+   the expert-built newspaper-count index whose spikes are announcement-dated by
+   construction. Validated against known announcements before testing: 2018-03-01
+   (Section 232 announced) spikes to ~531 vs median 74; 2025-02-10 (25% reinstated)
+   ~538; 2025-06-02 (50%) ~1179. Loader: `src/data/news_tpu.py`.
+2. **GDELT news-volume spikes** (EPU-style, Baker-Bloom-Davis precedent), implemented in
+   `src/data/news_gdelt.py` with polite pacing and incremental caching; retained as a
+   fallback because the free GDELT API hard-throttles multi-year pulls.
+
+The identical pre-registered design as step 4 was re-run (same ACI flags, same 5-day
+primary window, same permutation arbiter, same seed), swapping only the event dating.
+See `scripts/step6_announcement_attribution.py`, numbers in
+[`outputs/step6_announcement_summary.json`](outputs/step6_announcement_summary.json).
+
+| Test (79 TPU spike events, z>=3) | Hit rate | Base rate | p |
+| --- | --- | --- | --- |
+| **Primary: 5d window (pre-registered)** | 6.8% | 9.0% | **0.85** |
+| Sensitivity: 3/10/14d, and z>=2 (200 events) | 5.8-20.8% | 6.9-21.8% | 0.64-0.93 |
+
+![HRC breaches vs TPU announcements](outputs/figures/hrc_breaches_tpu_announcements.png)
+
+**Verdict: still not significant, breaches co-occur with announcements no more than
+random days do (the hit rate is actually below the base rate).** With the announcement-
+timing objection now removed, the honest conclusion is stronger than "deferred": daily
+interval breaches on HRC futures are simply **not announcement-clustered**. The economics
+are visible in the figure: the largest breach clusters (2020-2022) sit in demand-driven
+boom/bust with no announcements nearby, and in the announcement-dense 2025 period the
+ACI band had already widened, absorbing the policy noise. The causal-attribution claim
+has now failed two pre-registered tests with two independent event datings; it is
+**closed as rejected**, and attribution permanently ships as candidate-surfacing with a
+source link. No further event sources will be tried against this same hypothesis, that
+would be p-hacking.
+
 ## Forward early-warning evaluation (G3, no lookahead)
 
 The design's forward eval (signals-approach EWS metrics via `src/eval/event_eval.py`),
