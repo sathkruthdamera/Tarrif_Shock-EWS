@@ -8,30 +8,36 @@ license = { text = "MIT" }
 authors = [{ name = "sathkruthdamera" }]
 
 dependencies = [
-    # forecasting backbone
-    "chronos-forecasting>=1.4",     # Chronos-2 zero-shot time-series foundation model
+    # forecasting backbone (v1: TimesFM 2.5; Python 3.10-3.12 for torch/timesfm wheels)
+    "timesfm[torch]>=1.2",          # zero-shot time-series foundation model
     "torch>=2.2",
-    # calibration
-    "mapie>=0.9",                   # split-conformal prediction intervals
+    # calibration is in-repo (split-conformal CQR + ACI in src/forecast/conformal.py)
     # changepoint detection
     "ruptures>=1.1",                # PELT; BOCPD as an alternative
     # event reasoning
     "sentence-transformers>=3.0",   # local embeddings for event relevance
+    # baselines
+    "statsmodels>=0.14",            # ARIMA baseline
+    "arch>=6.0",                    # GARCH(1,1) volatility band
+    "scipy>=1.11",                  # normal quantiles for the GARCH band
     # data access
-    "yfinance>=0.2.40",             # prices / SLX proxy
-    "fredapi>=0.5",                 # FRED macro series
-    "requests>=2.32",               # Federal Register + Census APIs
+    "yfinance>=0.2.40",             # prices (SLX / HRC=F)
+    "fredapi>=0.5",                 # FRED macro series (optional at runtime)
+    "requests>=2.32",               # Federal Register / GDELT / TPU downloads
+    "openpyxl>=3.1",                # TPU daily index (xlsx)
     # core
     "pandas>=2.2",
     "numpy>=1.26",
-    "pyarrow>=16.0",                # parquet cache
+    "pyarrow>=16.0",                # parquet caches
     "pyyaml>=6.0",                  # config
     "python-dotenv>=1.0",           # .env secrets
-    "statsmodels>=0.14",            # ARIMA/GARCH baselines
     "matplotlib>=3.8",              # figures
 ]
 
 [project.optional-dependencies]
+chronos = [
+    "chronos-forecasting>=1.4",     # alternative backbone (src/forecast/chronos_model.py)
+]
 dev = [
     "jupyter>=1.0",
     "ruff>=0.5",
