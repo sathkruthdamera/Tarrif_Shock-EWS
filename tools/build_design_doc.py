@@ -1067,8 +1067,8 @@ table_header(ws, r, ["Gap", "Risk if left open", "Fix", "Status"])
 pv2 = [
     ["G1. No automated tests for core quant logic",
      "Regressions in CQR/ACI math, severity rules, attribution ranking, or the alert schema ship silently; all verification so far was manual",
-     "pytest suite: synthetic coverage-guarantee tests for cqr_offset/aci_cqr, rule tests for severity, stub-embedder tests for attribution, schema test for deliver()",
-     "Open"],
+     "pytest suite: synthetic coverage-guarantee tests for cqr_offset/aci_cqr (incl. regime-shift adaptation + negative-offset tightening), rule tests for severity, stub-embedder tests for attribution (incl. the object-dtype regression), event_eval metrics, deliver() schema + webhook-failure isolation. 25 tests green, network-free.",
+     "Closed"],
     ["G2. Aluminum calibration unvalidated",
      "W2 proved the pipeline RUNS on ALI=F, not that ACI holds ~90% coverage there; alerts on an uncalibrated vertical are untrustworthy",
      "Run ACI over the cached bands_aluminum.parquet; record realized coverage here",
