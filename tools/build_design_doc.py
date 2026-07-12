@@ -155,8 +155,8 @@ box(ws, 10, 2, 11, 6,
 
 meta = [
     ("Document Type", DOCTYPE),
-    ("Version", "1.2 (v1 delivered)"),
-    ("Status", "v1 complete: pipeline live, all logged gaps closed with evidence"),
+    ("Version", "1.3 (v2 in progress)"),
+    ("Status", "v1 complete and live; v2 workstreams W1-W3 planned on sheet 12"),
     ("Date", "2026-07-10"),
     ("Target Vertical (v1)", "Steel / steel-exposed sectors (HRC futures, SLX proxy)"),
     ("Primary Objective", "Give risk teams early, calibrated, attributable warning of "
@@ -193,6 +193,7 @@ rev = [
     ["1.0", "2026-07-08", "Baseline design; v1 scope frozen to steel vertical", "For Review"],
     ["1.1", "2026-07-09", "v1 backbone set to TimesFM 2.5 (quantile head) + CQR calibration; validated on SLX", "For Review"],
     ["1.2", "2026-07-10", "v1 delivered: ACI+GARCH pipeline live with F1 alert filter; causal attribution closed-rejected (two pre-registered nulls); Build Log rows A-J complete", "v1 Complete"],
+    ["1.3", "2026-07-10", "v2 plan logged (sheet 12): W1 covariates via TimesFM XReg (Moirai-2 fallback), W2 aluminum vertical config-only, W3 alert delivery; W1 eval pre-registered", "v2 In Progress"],
 ]
 table_rows(ws, r + 1, rev)
 
@@ -943,6 +944,78 @@ for i, t in enumerate(gaps):
     ws.row_dimensions[er].height = max(24, 14 * (1 + len(t) // 115))
     if i % 2 == 1:
         for cc in range(1, 6):
+            ws.cell(row=er, column=cc).fill = fill(LIGHTER)
+
+# ----------------------------------------------------------------------------
+# SHEET 12 - V2 PLAN & PROGRESS
+# ----------------------------------------------------------------------------
+ws = wb.create_sheet("12. v2 Plan & Progress")
+ws.sheet_view.showGridLines = False
+set_widths(ws, {"A": 26, "B": 40, "C": 40, "D": 14})
+title_block(ws, "v2 Plan & Progress", "Workstreams, decisions, and pre-registered acceptance criteria", "D")
+
+r = 4
+ws.cell(row=r, column=1, value="Workstreams").font = F(11, True, NAVY)
+r += 1
+table_header(ws, r, ["Workstream", "Scope", "Acceptance criteria (pre-registered)", "Status"])
+w2 = [
+    ["W1. Covariate-aware forecasting",
+     "Exogenous covariates via TimesFM 2.5 XReg (forecast_with_covariates, timesfm[xreg]). "
+     "Covariate set fixed upfront: UUP (USD), CL=F (oil), HG=F (copper), all yfinance daily, "
+     "no key. Future covariate values = carry-forward persistence (no lookahead).",
+     "PRIMARY: mean ACI-calibrated interval width at matched 90% coverage, XReg arm vs v1 "
+     "cached arm on identical HRC rolling origins. SECONDARY: MASE. XReg ships only if it "
+     "improves the primary without degrading coverage; else v1 stands and Moirai-2 is evaluated.",
+     "In progress"],
+    ["W2. Aluminum vertical",
+     "config/aluminum.yaml only (Section 232 also covers aluminum); zero code changes.",
+     "python -m src.pipeline --config config/aluminum.yaml runs end-to-end and produces a "
+     "band-history cache + alert scan. Proves the extensibility NFR.",
+     "Planned"],
+    ["W3. Alert delivery",
+     "Pipeline writes machine-readable alert artifacts to outputs/alerts/<vertical>_<date>.json; "
+     "optional webhook URL in config (stub, off by default).",
+     "Artifact produced on a real run; schema documented; webhook config present but inert "
+     "unless set.",
+     "Planned"],
+]
+sfill = {"In progress": AMBER, "Planned": LIGHTER, "Done": MINT}
+for i, row in enumerate(w2):
+    er = r + 1 + i
+    for j, val in enumerate(row):
+        c = ws.cell(row=er, column=1 + j, value=val)
+        c.font = F(9.5, bold=(j == 0)); c.alignment = LEFT_T; c.border = BORDER_THIN
+    ws.cell(row=er, column=4).fill = fill(sfill.get(row[3], WHITE))
+    ws.cell(row=er, column=4).alignment = CENTER
+    ws.row_dimensions[er].height = 66
+
+r = r + 1 + len(w2) + 2
+box(ws, r, 1, r, 4, "W1 backbone decision (supersedes the v1-era 'Moirai-2 for v2' note)", BLUE, WHITE, size=11)
+r += 1
+ws.merge_cells(start_row=r, start_column=1, end_row=r + 3, end_column=4)
+dec = ("DECISION: attempt covariates with TimesFM 2.5 XReg FIRST, keeping the proven v1 backbone, "
+       "ACI calibration, and pipeline unchanged (one optional dependency: timesfm[xreg]). "
+       "Moirai-2 remains the fallback, evaluated only if XReg fails to run or does not improve the "
+       "pre-registered primary metric. Rationale: incremental risk, directly comparable arms on the "
+       "same cached rolling origins, and no re-validation of the calibration stack.")
+c = ws.cell(row=r, column=1, value=dec)
+c.font = F(9.5); c.alignment = LEFT_T; c.fill = fill(LIGHT); c.border = BORDER_THIN
+
+r += 5
+box(ws, r, 1, r, 4, "v2 evaluation principles (carried from v1)", GREY, WHITE, size=10)
+principles = [
+    "Every claim pre-registered before results are seen; nulls are published, not buried.",
+    "Arms compared on identical rolling origins with the same ACI settings (gamma=0.02, warmup=50).",
+    "No lookahead: future covariate values are carry-forward persistence, never realized futures.",
+    "Results land in this sheet + README + a step JSON before any status flips to Done.",
+]
+for i, t in enumerate(principles):
+    er = r + 1 + i
+    ws.merge_cells(start_row=er, start_column=1, end_row=er, end_column=4)
+    c = ws.cell(row=er, column=1, value="•  " + t)
+    c.font = F(9.5); c.alignment = LEFT_T; c.border = BORDER_THIN
+    if i % 2 == 1:
+        for cc in range(1, 5):
             ws.cell(row=er, column=cc).fill = fill(LIGHTER)
 
 # ----------------------------------------------------------------------------
