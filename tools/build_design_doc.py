@@ -1077,8 +1077,10 @@ pv2 = [
      "Closed"],
     ["G3. ACI gamma=0.02 is an untested default",
      "A lucky constant: calibration quality could hinge on one literature value never checked on our series",
-     "Sweep gamma in {0.005, 0.01, 0.02, 0.05, 0.1} on cached HRC + SLX bands. Pre-registered: keep 0.02 unless another value clearly dominates |coverage-90| on BOTH series",
-     "Open"],
+     "Swept (step10): coverage within ~0.5pp of target for gamma 0.005-0.05 on BOTH series "
+     "(HRC 89.6-90.2%, SLX 89.2-89.7%); only gamma=0.1 degrades (>1pp). No challenger dominates; "
+     "0.02 KEPT per the pre-registered rule. The default is robust, not lucky.",
+     "Closed"],
     ["G4. Band cache lacks a config guard",
      "Changing horizon_days or the target symbol silently feeds stale cached bands into ACI (wrong intervals, no error)",
      "Sidecar meta (symbol, horizon, quantiles) written with the cache; mismatch invalidates and recomputes; unit test",

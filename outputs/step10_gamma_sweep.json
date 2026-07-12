@@ -1,0 +1,74 @@
+{
+  "target_coverage": 0.9,
+  "gammas": [
+    0.005,
+    0.01,
+    0.02,
+    0.05,
+    0.1
+  ],
+  "default": 0.02,
+  "framing": "pre-registered: keep 0.02 unless another gamma is >=1pp closer to target coverage on BOTH cached series; width is context only",
+  "results": {
+    "HRC=F": {
+      "0.005": {
+        "coverage": 0.9015,
+        "abs_dev_pct": 0.15,
+        "mean_width": 134.77
+      },
+      "0.01": {
+        "coverage": 0.9005,
+        "abs_dev_pct": 0.05,
+        "mean_width": 126.03
+      },
+      "0.02": {
+        "coverage": 0.8995,
+        "abs_dev_pct": 0.05,
+        "mean_width": 117.27
+      },
+      "0.05": {
+        "coverage": 0.8956,
+        "abs_dev_pct": 0.44,
+        "mean_width": 106.69
+      },
+      "0.1": {
+        "coverage": 0.8898,
+        "abs_dev_pct": 1.02,
+        "mean_width": 99.23
+      }
+    },
+    "SLX": {
+      "0.005": {
+        "coverage": 0.8961,
+        "abs_dev_pct": 0.39,
+        "mean_width": 6.75
+      },
+      "0.01": {
+        "coverage": 0.8966,
+        "abs_dev_pct": 0.34,
+        "mean_width": 6.94
+      },
+      "0.02": {
+        "coverage": 0.8966,
+        "abs_dev_pct": 0.34,
+        "mean_width": 6.85
+      },
+      "0.05": {
+        "coverage": 0.8922,
+        "abs_dev_pct": 0.78,
+        "mean_width": 6.52
+      },
+      "0.1": {
+        "coverage": 0.8835,
+        "abs_dev_pct": 1.65,
+        "mean_width": 6.33
+      }
+    }
+  },
+  "default_abs_dev_pct": {
+    "HRC=F": 0.05,
+    "SLX": 0.34
+  },
+  "dominating_challengers": {},
+  "decision": "KEEP gamma=0.02: no challenger dominates by >=1pp on both series"
+}
