@@ -155,9 +155,9 @@ box(ws, 10, 2, 11, 6,
 
 meta = [
     ("Document Type", DOCTYPE),
-    ("Version", "1.3 (v2 in progress)"),
-    ("Status", "v1 complete and live; v2 workstreams W1-W3 planned on sheet 12"),
-    ("Date", "2026-07-10"),
+    ("Version", "1.4 (v2 delivered)"),
+    ("Status", "v1 + v2 complete: two live verticals, alert artifacts, covariates closed-negative"),
+    ("Date", "2026-07-11"),
     ("Target Vertical (v1)", "Steel / steel-exposed sectors (HRC futures, SLX proxy)"),
     ("Primary Objective", "Give risk teams early, calibrated, attributable warning of "
                           "tariff- and geopolitics-driven commodity shocks"),
@@ -194,6 +194,7 @@ rev = [
     ["1.1", "2026-07-09", "v1 backbone set to TimesFM 2.5 (quantile head) + CQR calibration; validated on SLX", "For Review"],
     ["1.2", "2026-07-10", "v1 delivered: ACI+GARCH pipeline live with F1 alert filter; causal attribution closed-rejected (two pre-registered nulls); Build Log rows A-J complete", "v1 Complete"],
     ["1.3", "2026-07-10", "v2 plan logged (sheet 12): W1 covariates via TimesFM XReg (Moirai-2 fallback), W2 aluminum vertical config-only, W3 alert delivery; W1 eval pre-registered", "v2 In Progress"],
+    ["1.4", "2026-07-11", "v2 delivered: W1 closed-negative (XReg +22.7% width, does not ship; v1 stands), W2 aluminum vertical live config-only, W3 alert artifacts + inert webhook shipped", "v2 Complete"],
 ]
 table_rows(ws, r + 1, rev)
 
@@ -652,7 +653,8 @@ tree = [
     ("├─ README.md", "Problem, one dated backtested example up top, limitations", False),
     ("├─ pyproject.toml", "deps: timesfm[torch], arch, ruptures, sentence-transformers (chronos optional)", False),
     ("├─ config/", "Per-vertical configuration", True),
-    ("│   └─ steel.yaml", "Series IDs, HS codes, keywords, horizons, thresholds", False),
+    ("│   ├─ steel.yaml", "Series IDs, HS codes, keywords, horizons, thresholds", False),
+    ("│   └─ aluminum.yaml", "Second vertical (ALI=F), zero code changes (v2-W2)", False),
     ("├─ src/", "Application source", True),
     ("│   ├─ data/", "Ingestion layer", True),
     ("│   │   ├─ prices.py", "yfinance / FRED loaders -> parquet", False),
@@ -662,8 +664,9 @@ tree = [
     ("│   │   └─ news_gdelt.py", "GDELT volume spikes (fallback; API throttles)", False),
     ("│   ├─ forecast/", "Forecasting layer", True),
     ("│   │   ├─ timesfm_model.py", "TimesFM 2.5 zero-shot forecast + quantiles (v1 default)", False),
+    ("│   │   ├─ timesfm_xreg.py", "Covariate (XReg) forecaster; evaluated, does not ship (v2-W1)", False),
     ("│   │   ├─ chronos_model.py", "Chronos-2 forecaster (alternative backbone)", False),
-    ("│   │   └─ conformal.py", "Split-conformal + CQR calibration wrapper", False),
+    ("│   │   └─ conformal.py", "Split-conformal CQR + ACI calibration", False),
     ("│   ├─ events/", "Event reasoning layer", True),
     ("│   │   ├─ embed.py", "Sentence-transformer embeddings", False),
     ("│   │   ├─ severity.py", "Rule-based severity tagging", False),
@@ -685,10 +688,12 @@ tree = [
     ("│   ├─ step4_hrc_attribution.py", "Step 4: pre-registered attribution retest on HRC futures", False),
     ("│   ├─ step5_forward_eval.py", "Step 5: forward early-warning eval (G3), ACI flags vs shocks", False),
     ("│   ├─ step6_announcement_attribution.py", "Step 6: announcement-dated (TPU) attribution retest", False),
-    ("│   └─ step7_alert_precision.py", "Step 7: pre-specified alert-precision filter evaluation", False),
+    ("│   ├─ step7_alert_precision.py", "Step 7: pre-specified alert-precision filter evaluation", False),
+    ("│   └─ step8_covariates_eval.py", "Step 8 (v2-W1): XReg vs v1 pre-registered eval", False),
     ("├─ data/", "Gitignored raw + parquet cache", True),
     ("└─ outputs/", "Generated artifacts", True),
-    ("    └─ figures/", "Interval-breach plots for the writeup", False),
+    ("    ├─ figures/", "Interval-breach plots for the writeup", False),
+    ("    └─ alerts/", "Machine-readable alert artifacts per vertical/date (v2-W3)", False),
 ]
 table_header(ws, 4, ["Path", "Responsibility"])
 for i, (path, resp, isdir) in enumerate(tree):
@@ -966,20 +971,21 @@ w2 = [
      "PRIMARY: mean ACI-calibrated interval width at matched 90% coverage, XReg arm vs v1 "
      "cached arm on identical HRC rolling origins. SECONDARY: MASE. XReg ships only if it "
      "improves the primary without degrading coverage; else v1 stands and Moirai-2 is evaluated.",
-     "In progress"],
+     "Done (negative)"],
     ["W2. Aluminum vertical",
      "config/aluminum.yaml only (Section 232 also covers aluminum); zero code changes.",
      "python -m src.pipeline --config config/aluminum.yaml runs end-to-end and produces a "
      "band-history cache + alert scan. Proves the extensibility NFR.",
-     "Planned"],
+     "Done"],
     ["W3. Alert delivery",
      "Pipeline writes machine-readable alert artifacts to outputs/alerts/<vertical>_<date>.json; "
      "optional webhook URL in config (stub, off by default).",
      "Artifact produced on a real run; schema documented; webhook config present but inert "
      "unless set.",
-     "Planned"],
+     "Done"],
 ]
-sfill = {"In progress": AMBER, "Planned": LIGHTER, "Done": MINT}
+sfill = {"In progress": AMBER, "Planned": LIGHTER, "Done": MINT,
+         "Done (negative)": AMBER}
 for i, row in enumerate(w2):
     er = r + 1 + i
     for j, val in enumerate(row):
@@ -1002,6 +1008,42 @@ c = ws.cell(row=r, column=1, value=dec)
 c.font = F(9.5); c.alignment = LEFT_T; c.fill = fill(LIGHT); c.border = BORDER_THIN
 
 r += 5
+ws.cell(row=r, column=1, value="v2 measured results").font = F(11, True, NAVY)
+r += 1
+table_header(ws, r, ["Workstream", "Result", "", "Status"])
+ws.merge_cells(start_row=r, start_column=2, end_row=r, end_column=3)
+v2res = [
+    ["W1 covariates (XReg)",
+     "Pre-registered eval on identical HRC origins: XReg widened ACI intervals +22.7% at matched "
+     "coverage (117.3 -> 143.9 USD/ton; coverage 90.0% vs 90.6%) and worsened MASE (6.85 -> 8.10). "
+     "XReg does NOT ship; v1 stands. Moirai-2 not pursued: the failure is the persistence-covariate "
+     "information content, not the backbone; revisit only with genuinely forward-informative "
+     "covariates (futures curve, inventories). step8_covariates_eval.json",
+     "Done (negative)"],
+    ["W2 aluminum vertical",
+     "config/aluminum.yaml (ALI=F) ran end-to-end with ZERO code changes: own band-history cache, "
+     "event table, ACI scan, alert artifact. Extensibility NFR proven.",
+     "Done"],
+    ["W3 alert delivery",
+     "deliver() writes outputs/alerts/<vertical>_<date>.json on every run (zero-alert runs "
+     "distinguishable from no-run); candidate-drivers schema embeds the 'not a causal claim' note; "
+     "webhook config-driven, inert by default, failures cannot kill the batch. Verified on steel "
+     "and aluminum runs.",
+     "Done"],
+]
+for i, row in enumerate(v2res):
+    er = r + 1 + i
+    c1 = ws.cell(row=er, column=1, value=row[0]); c1.font = F(9.5, True, NAVY)
+    c1.alignment = LEFT_T; c1.border = BORDER_THIN
+    ws.merge_cells(start_row=er, start_column=2, end_row=er, end_column=3)
+    c2 = ws.cell(row=er, column=2, value=row[1]); c2.font = F(9.5); c2.alignment = LEFT_T
+    c4 = ws.cell(row=er, column=4, value=row[2]); c4.font = F(9.5, True); c4.alignment = CENTER
+    c4.fill = fill(sfill.get(row[2], WHITE))
+    for cc in range(1, 5):
+        ws.cell(row=er, column=cc).border = BORDER_THIN
+    ws.row_dimensions[er].height = 62
+
+r = r + 1 + len(v2res) + 2
 box(ws, r, 1, r, 4, "v2 evaluation principles (carried from v1)", GREY, WHITE, size=10)
 principles = [
     "Every claim pre-registered before results are seen; nulls are published, not buried.",

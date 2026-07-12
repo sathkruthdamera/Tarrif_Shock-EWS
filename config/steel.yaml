@@ -69,6 +69,9 @@ alert_filters:
   changepoint_tol_days: 7
   min_breach_run: 1          # F2 evaluated harmful; 1 = disabled
 
+alerting:
+  webhook_url: ""            # optional: POST alert JSON here when set (inert by default)
+
 detection:
   changepoint_method: pelt   # or: bocpd
   cost_model: l2             # l2 on rolling volatility finds regime breaks

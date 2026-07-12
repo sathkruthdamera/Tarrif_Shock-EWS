@@ -301,6 +301,33 @@ queryable by agency + keyword, which makes attribution auditable rather than han
   to supplement.
 - Nothing here constitutes trading or investment advice.
 
+## v2 (delivered): covariates tested, second vertical, alert delivery
+
+Three pre-planned workstreams (design doc sheet 12), each with a recorded outcome:
+
+**W1: covariate-aware forecasting, closed negative.** TimesFM 2.5 XReg with a
+pre-registered covariate set (UUP dollar, CL=F oil, HG=F copper; carry-forward
+persistence for the horizon, no lookahead) was evaluated head-to-head against v1 on
+identical HRC rolling origins. Result: intervals **22.7% wider** at matched ~90%
+coverage (117.3 -> 143.9 USD/ton) and worse MASE (6.85 -> 8.10). Per the
+pre-registered rule, **XReg does not ship and v1 stands**. Moirai-2 is deliberately
+not pursued: the failure is the information content of persistence-extended
+covariates, not the backbone; a backbone swap would retest the same weak hypothesis.
+Numbers: [`outputs/step8_covariates_eval.json`](outputs/step8_covariates_eval.json).
+
+![XReg vs v1 interval width](outputs/figures/hrc_xreg_vs_v1_width.png)
+
+**W2: aluminum vertical, live.** [`config/aluminum.yaml`](config/aluminum.yaml)
+(CME `ALI=F`, Section 232 aluminum events) runs the full pipeline end-to-end with
+**zero code changes**, proving the extensibility NFR:
+`python -m src.pipeline --config config/aluminum.yaml`.
+
+**W3: alert delivery, live.** Every pipeline run writes a machine-readable artifact
+to `outputs/alerts/<vertical>_<date>.json` (zero-alert runs are distinguishable from
+runs that never happened). The candidate-drivers schema embeds the "not a causal
+claim" framing, and an optional webhook (`alerting.webhook_url`) is inert by default;
+delivery failures cannot kill the batch.
+
 ## License
 
 MIT (see [`LICENSE`](LICENSE)).

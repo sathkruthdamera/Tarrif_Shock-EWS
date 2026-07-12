@@ -1,0 +1,26 @@
+{
+  "symbol": "HRC=F",
+  "framing": "pre-registered (design doc sheet 12): primary = mean ACI width at matched coverage; guard = XReg coverage >= 88%; secondary = MASE; horizon covariates are carry-forward persistence (no lookahead)",
+  "covariates": [
+    "UUP",
+    "CL=F",
+    "HG=F"
+  ],
+  "arms": {
+    "v1": {
+      "coverage": 0.8995,
+      "mean_width": 117.2745,
+      "mase": 6.8533
+    },
+    "xreg": {
+      "coverage": 0.9058,
+      "mean_width": 143.8687,
+      "mase": 8.0965
+    }
+  },
+  "primary_width_change_pct": 22.68,
+  "coverage_guard_ok": true,
+  "xreg_ships": false,
+  "decision": "v1 stands; per the decision rule, Moirai-2 is the next candidate (or covariates are dropped if judged not worth the complexity)",
+  "figure": "outputs/figures/hrc_xreg_vs_v1_width.png"
+}

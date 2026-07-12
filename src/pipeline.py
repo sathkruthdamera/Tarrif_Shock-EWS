@@ -171,6 +171,57 @@ def run(cfg: dict) -> list[Alert]:
     return alerts
 
 
+def deliver(alerts: list[Alert], cfg: dict, as_of: pd.Timestamp) -> Path:
+    """v2-W3: write a machine-readable alert artifact; optionally POST to a webhook.
+
+    Artifact: outputs/alerts/<vertical>_<YYYYMMDD>.json (written even when there are
+    zero alerts, so downstream consumers can distinguish 'ran clean' from 'did not
+    run'). Webhook: cfg['alerting']['webhook_url'], inert unless set.
+    """
+    import json
+
+    payload = {
+        "vertical": cfg["vertical"],
+        "as_of": str(as_of.date()),
+        "target": cfg["target"]["symbol"],
+        "n_alerts": len(alerts),
+        "alerts": [
+            {
+                "breach_date": str(a.breach_date.date()),
+                "actual": round(a.actual, 4),
+                "interval": [round(a.lower, 4), round(a.upper, 4)],
+                "direction": a.direction,
+                "breach_run_days": a.breach_run,
+                "changepoint_agrees": a.changepoint_agrees,
+                "garch_agrees": a.garch_agrees,
+                "aci_realized_coverage": round(a.aci_coverage, 4),
+                "candidate_drivers": [
+                    {"title": d.title, "published": str(d.published.date()),
+                     "source_url": d.source_url, "score": round(d.score, 3)}
+                    for d in a.drivers
+                ],
+                "note": "candidate-surfacing, not a causal claim",
+            }
+            for a in alerts
+        ],
+    }
+    out_dir = ROOT / "outputs" / "alerts"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    path = out_dir / f"{cfg['vertical']}_{as_of.strftime('%Y%m%d')}.json"
+    path.write_text(json.dumps(payload, indent=2))
+
+    url = (cfg.get("alerting") or {}).get("webhook_url") or ""
+    if url:
+        import requests
+
+        try:
+            requests.post(url, json=payload, timeout=30).raise_for_status()
+            print(f"webhook delivered to {url}")
+        except Exception as exc:  # delivery must not kill the batch
+            print(f"webhook delivery FAILED (artifact still written): {exc}")
+    return path
+
+
 def main() -> None:
     load_dotenv()
     ap = argparse.ArgumentParser(description="Tariff & Geopolitical Shock EWS")
@@ -183,6 +234,8 @@ def main() -> None:
         print("No interval breaches in the most recent block (post-warmup).")
     for a in alerts:
         print(a.summary())
+    artifact = deliver(alerts, cfg, as_of=pd.Timestamp.now())
+    print(f"alert artifact: {artifact.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":  # pragma: no cover

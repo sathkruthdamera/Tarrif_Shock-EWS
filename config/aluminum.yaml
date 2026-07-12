@@ -1,0 +1,78 @@
+# Aluminum vertical configuration (v2-W2).
+# Proves the extensibility NFR: a new vertical is this file only, zero code changes.
+# Section 232 covers aluminum alongside steel, so the event machinery carries over.
+
+vertical: aluminum
+
+target:
+  symbol: ALI=F        # CME aluminum futures (validated: 2017-01..present, ~4% bday gaps)
+  field: Close
+  frequency: B
+
+macro:                 # optional context (skipped without FRED_API_KEY)
+  nonferrous_ppi: WPU102
+  industrial_production: INDPRO
+  import_price_index: IR
+  usd_index: DTWEXBGS
+
+trade:
+  hs_codes: ["76", "7601", "7606"]   # aluminum; unwrought; plates/sheets/strip
+  flow: imports
+
+shipping:
+  index: FBX
+
+events:
+  federal_register:
+    terms: ["aluminum 232 tariff", "adjusting imports of aluminum"]
+    document_types: ["PRESDOCU", "RULE"]
+    start: "2017-01-01"
+    max_events: 250
+  news:
+    keywords: ["aluminum tariff", "aluminum import", "trade dispute", "export control"]
+  shock_prototypes:
+    - "New tariff imposed on aluminum imports effective immediately."
+    - "Section 232 duties on aluminum raised."
+    - "Antidumping duty order issued on aluminum products."
+    - "Export restrictions announced affecting aluminum supply."
+
+forecast:
+  horizon_days: 10
+  context_days: 1024
+  quantiles: [0.1, 0.5, 0.9]
+
+calibration:
+  method: aci
+  target_coverage: 0.90
+  gamma: 0.02
+  warmup_days: 50
+  history_blocks: 60
+  garch_cross_check: true
+
+alert_filters:
+  require_changepoint: true
+  changepoint_tol_days: 7
+  min_breach_run: 1
+
+detection:
+  changepoint_method: pelt
+  cost_model: l2
+  vol_window: 20
+  penalty: 8
+  breach_min_run: 1
+
+attribution:
+  lookback_days: 14
+  weights:
+    relevance: 0.5
+    severity: 0.3
+    recency: 0.2
+  top_k: 3
+
+alerting:
+  webhook_url: ""      # optional: POST alert JSON here when set (inert by default)
+
+backtest:
+  holdout_months: 6
+  rolling: expanding
+  step_days: 5
