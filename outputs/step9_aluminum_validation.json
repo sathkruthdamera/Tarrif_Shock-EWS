@@ -1,0 +1,12 @@
+{
+  "vertical": "aluminum",
+  "target": "ALI=F",
+  "band_days": 600,
+  "eval_days_post_warmup": 550,
+  "target_coverage": 0.9,
+  "aci_realized_coverage": 0.8964,
+  "breach_days": 57,
+  "mean_calibrated_width": 300.71,
+  "verdict": "calibrated",
+  "note": "validated on the pipeline's own cached band history; small sample (~60 blocks), monitored further via aci_realized_coverage on every alert"
+}

@@ -1071,8 +1071,10 @@ pv2 = [
      "Closed"],
     ["G2. Aluminum calibration unvalidated",
      "W2 proved the pipeline RUNS on ALI=F, not that ACI holds ~90% coverage there; alerts on an uncalibrated vertical are untrustworthy",
-     "Run ACI over the cached bands_aluminum.parquet; record realized coverage here",
-     "Open"],
+     "Validated (step9): ACI realized coverage 89.6% vs 90% target over 550 post-warmup days "
+     "(2024-03..2026-07), 57 breach-days, mean calibrated width 300.7 USD/ton. Small-sample "
+     "caveat noted; coverage continues to be monitored on every alert.",
+     "Closed"],
     ["G3. ACI gamma=0.02 is an untested default",
      "A lucky constant: calibration quality could hinge on one literature value never checked on our series",
      "Sweep gamma in {0.005, 0.01, 0.02, 0.05, 0.1} on cached HRC + SLX bands. Pre-registered: keep 0.02 unless another value clearly dominates |coverage-90| on BOTH series",
