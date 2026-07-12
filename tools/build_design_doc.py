@@ -1083,8 +1083,10 @@ pv2 = [
      "Closed"],
     ["G4. Band cache lacks a config guard",
      "Changing horizon_days or the target symbol silently feeds stale cached bands into ACI (wrong intervals, no error)",
-     "Sidecar meta (symbol, horizon, quantiles) written with the cache; mismatch invalidates and recomputes; unit test",
-     "Open"],
+     "Implemented: sidecar bands_<vertical>.meta.json (symbol, horizon, quantiles) written with the "
+     "cache; mismatch or missing meta invalidates and recomputes with a printed notice. 4 unit tests "
+     "(hit, horizon change, symbol change, pre-guard cache). One-time recompute of existing caches.",
+     "Closed"],
     ["G5. No scheduled execution",
      "The 'daily batch' only runs when someone remembers; stale alerts read as 'all clear'",
      "scripts/run_daily.bat for both verticals + README ops note with the Windows Task Scheduler registration command",

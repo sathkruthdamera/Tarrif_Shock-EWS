@@ -75,13 +75,25 @@ def _band_history(series: pd.Series, cfg: dict,
     Cache lives at data/bands_<vertical>.parquet; each run only computes blocks
     whose dates are not yet cached, so the daily batch costs one forecast.
     """
+    import json
+
     fcfg = cfg["forecast"]
     horizon = fcfg["horizon_days"]
     n_blocks = cfg["calibration"].get("history_blocks", 60)
     quantiles = fcfg["quantiles"]
 
     cache_path = DATA_DIR / f"bands_{cfg['vertical']}.parquet"
-    cached = pd.read_parquet(cache_path) if cache_path.exists() else pd.DataFrame()
+    meta_path = DATA_DIR / f"bands_{cfg['vertical']}.meta.json"
+    # post-v2 gap G4: a cache built under a different symbol/horizon/quantile set
+    # would silently corrupt ACI; the sidecar meta invalidates it instead.
+    meta = {"symbol": cfg["target"]["symbol"], "horizon": horizon,
+            "quantiles": list(quantiles)}
+    cache_valid = cache_path.exists() and meta_path.exists() and \
+        json.loads(meta_path.read_text()) == meta
+    if cache_path.exists() and not cache_valid:
+        print(f"band cache config mismatch for {cfg['vertical']!r}; recomputing "
+              f"(expected {meta})")
+    cached = pd.read_parquet(cache_path) if cache_valid else pd.DataFrame()
     have = set(pd.to_datetime(cached["date"])) if len(cached) else set()
 
     last_origin = len(series) - horizon
@@ -104,6 +116,7 @@ def _band_history(series: pd.Series, cfg: dict,
                   .drop_duplicates(subset=["date"], keep="last"))
         DATA_DIR.mkdir(parents=True, exist_ok=True)
         cached.to_parquet(cache_path)
+        meta_path.write_text(json.dumps(meta))
     cached["date"] = pd.to_datetime(cached["date"])
     keep_from = series.index[origins[0]]
     return cached[cached["date"] >= keep_from].sort_values("date").reset_index(drop=True)
