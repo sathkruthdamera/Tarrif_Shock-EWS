@@ -54,6 +54,19 @@ def load_fred(series_ids: dict[str, str], start: str = "2015-01-01") -> pd.DataF
     return pd.DataFrame(cols).asfreq("B").ffill()
 
 
+def load_covariates(symbols: list[str], start: str = "2015-01-01") -> pd.DataFrame:
+    """Daily exogenous covariate panel from yfinance (no API key).
+
+    v2-W1 pre-registered set: UUP (USD proxy), CL=F (oil), HG=F (copper). Business-day
+    aligned and forward-filled; the caller handles horizon extension (carry-forward
+    persistence, never realized futures, to avoid lookahead).
+    """
+    cols = {}
+    for sym in symbols:
+        cols[sym] = load_target(sym, start=start)
+    return pd.DataFrame(cols).asfreq("B").ffill()
+
+
 def build_price_panel(cfg: dict, cache: bool = True) -> pd.DataFrame:
     """Assemble target + macro into one daily panel and optionally cache to parquet.
 

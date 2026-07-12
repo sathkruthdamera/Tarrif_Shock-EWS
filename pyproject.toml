@@ -35,6 +35,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+xreg = [
+    "jax>=0.4",                     # required by timesfm forecast_with_covariates (v2-W1);
+                                    # note: `pip install timesfm[xreg]` failed to build on
+                                    # Windows, installing jax directly works
+]
 chronos = [
     "chronos-forecasting>=1.4",     # alternative backbone (src/forecast/chronos_model.py)
 ]
