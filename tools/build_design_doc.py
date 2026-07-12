@@ -1060,6 +1060,42 @@ for i, t in enumerate(principles):
         for cc in range(1, 5):
             ws.cell(row=er, column=cc).fill = fill(LIGHTER)
 
+r = r + len(principles) + 2
+box(ws, r, 1, r, 4, "Post-v2 gap register (found in the v2 close-out audit; solve in order)", AMBER_DK, WHITE, size=11)
+r += 1
+table_header(ws, r, ["Gap", "Risk if left open", "Fix", "Status"])
+pv2 = [
+    ["G1. No automated tests for core quant logic",
+     "Regressions in CQR/ACI math, severity rules, attribution ranking, or the alert schema ship silently; all verification so far was manual",
+     "pytest suite: synthetic coverage-guarantee tests for cqr_offset/aci_cqr, rule tests for severity, stub-embedder tests for attribution, schema test for deliver()",
+     "Open"],
+    ["G2. Aluminum calibration unvalidated",
+     "W2 proved the pipeline RUNS on ALI=F, not that ACI holds ~90% coverage there; alerts on an uncalibrated vertical are untrustworthy",
+     "Run ACI over the cached bands_aluminum.parquet; record realized coverage here",
+     "Open"],
+    ["G3. ACI gamma=0.02 is an untested default",
+     "A lucky constant: calibration quality could hinge on one literature value never checked on our series",
+     "Sweep gamma in {0.005, 0.01, 0.02, 0.05, 0.1} on cached HRC + SLX bands. Pre-registered: keep 0.02 unless another value clearly dominates |coverage-90| on BOTH series",
+     "Open"],
+    ["G4. Band cache lacks a config guard",
+     "Changing horizon_days or the target symbol silently feeds stale cached bands into ACI (wrong intervals, no error)",
+     "Sidecar meta (symbol, horizon, quantiles) written with the cache; mismatch invalidates and recomputes; unit test",
+     "Open"],
+    ["G5. No scheduled execution",
+     "The 'daily batch' only runs when someone remembers; stale alerts read as 'all clear'",
+     "scripts/run_daily.bat for both verticals + README ops note with the Windows Task Scheduler registration command",
+     "Open"],
+]
+gfill = {"Open": AMBER, "Closed": MINT, "Closed-Negative": AMBER}
+for i, row in enumerate(pv2):
+    er = r + 1 + i
+    for j, val in enumerate(row):
+        c = ws.cell(row=er, column=1 + j, value=val)
+        c.font = F(9.5, bold=(j == 0)); c.alignment = LEFT_T; c.border = BORDER_THIN
+    ws.cell(row=er, column=4).fill = fill(gfill.get(row[3], WHITE))
+    ws.cell(row=er, column=4).alignment = CENTER
+    ws.row_dimensions[er].height = 52
+
 # ----------------------------------------------------------------------------
 # Global: freeze panes on table sheets + set print/page basics
 # ----------------------------------------------------------------------------
