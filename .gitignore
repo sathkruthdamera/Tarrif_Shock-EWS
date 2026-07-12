@@ -7,6 +7,7 @@
 /outputs/**/*.pdf
 /outputs/**/*.parquet
 /outputs/cache/
+/outputs/logs/
 
 # Secrets
 .env

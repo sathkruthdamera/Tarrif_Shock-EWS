@@ -679,6 +679,7 @@ tree = [
     ("│       └─ event_eval.py", "Lead-time, precision/recall, attribution accuracy", False),
     ("├─ notebooks/", "Analysis & demo", True),
     ("│   └─ 01_case_study_steel.ipynb", "Interactive walkthrough of the production path", False),
+    ("├─ tests/", "pytest suite: conformal math, events, eval, delivery, cache guard (G1/G4)", True),
     ("├─ tools/", "Repo meta-tooling", True),
     ("│   └─ build_design_doc.py", "Regenerates docs/ solution design workbook", False),
     ("├─ scripts/", "Runnable build-step scripts", True),
@@ -689,7 +690,10 @@ tree = [
     ("│   ├─ step5_forward_eval.py", "Step 5: forward early-warning eval (G3), ACI flags vs shocks", False),
     ("│   ├─ step6_announcement_attribution.py", "Step 6: announcement-dated (TPU) attribution retest", False),
     ("│   ├─ step7_alert_precision.py", "Step 7: pre-specified alert-precision filter evaluation", False),
-    ("│   └─ step8_covariates_eval.py", "Step 8 (v2-W1): XReg vs v1 pre-registered eval", False),
+    ("│   ├─ step8_covariates_eval.py", "Step 8 (v2-W1): XReg vs v1 pre-registered eval", False),
+    ("│   ├─ step9_aluminum_validation.py", "Step 9 (G2): aluminum ACI coverage validation", False),
+    ("│   ├─ step10_gamma_sweep.py", "Step 10 (G3): ACI gamma sensitivity sweep", False),
+    ("│   └─ run_daily.bat", "Daily batch for all verticals + logs (G5)", False),
     ("├─ data/", "Gitignored raw + parquet cache", True),
     ("└─ outputs/", "Generated artifacts", True),
     ("    ├─ figures/", "Interval-breach plots for the writeup", False),
@@ -1089,8 +1093,10 @@ pv2 = [
      "Closed"],
     ["G5. No scheduled execution",
      "The 'daily batch' only runs when someone remembers; stale alerts read as 'all clear'",
-     "scripts/run_daily.bat for both verticals + README ops note with the Windows Task Scheduler registration command",
-     "Open"],
+     "Implemented: scripts/run_daily.bat runs every vertical with per-vertical logs "
+     "(outputs/logs/); README Operations section documents the schtasks registration. Verified "
+     "end-to-end on both verticals; missing daily artifact now means 'did not run', never 'all clear'.",
+     "Closed"],
 ]
 gfill = {"Open": AMBER, "Closed": MINT, "Closed-Negative": AMBER}
 for i, row in enumerate(pv2):

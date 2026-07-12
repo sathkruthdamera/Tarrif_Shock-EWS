@@ -301,6 +301,26 @@ queryable by agency + keyword, which makes attribution auditable rather than han
   to supplement.
 - Nothing here constitutes trading or investment advice.
 
+## Operations
+
+Run all verticals as a daily batch (writes alert artifacts + per-vertical logs):
+
+```bat
+scripts\run_daily.bat
+```
+
+Register it with Windows Task Scheduler to run weekday evenings after market close
+(one-time, from the repo root, adjust the path):
+
+```bat
+schtasks /Create /TN "TariffShockEWS" /TR "C:\path\to\repo\scripts\run_daily.bat" ^
+    /SC WEEKLY /D MON,TUE,WED,THU,FRI /ST 18:30
+```
+
+Each run appends to `outputs/logs/<vertical>_daily.log` and writes
+`outputs/alerts/<vertical>_<date>.json`, so a missing artifact for a date means the
+batch did not run (stale alerts never read as "all clear"). Tests: `pytest -q`.
+
 ## v2 (delivered): covariates tested, second vertical, alert delivery
 
 Three pre-planned workstreams (design doc sheet 12), each with a recorded outcome:

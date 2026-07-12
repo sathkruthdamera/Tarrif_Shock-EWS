@@ -1,0 +1,23 @@
+{
+  "vertical": "aluminum",
+  "as_of": "2026-07-12",
+  "target": "ALI=F",
+  "n_alerts": 1,
+  "alerts": [
+    {
+      "breach_date": "2026-07-10",
+      "actual": 3303.5,
+      "interval": [
+        3331.7612,
+        4236.0317
+      ],
+      "direction": "down",
+      "breach_run_days": 1,
+      "changepoint_agrees": true,
+      "garch_agrees": true,
+      "aci_realized_coverage": 0.8945,
+      "candidate_drivers": [],
+      "note": "candidate-surfacing, not a causal claim"
+    }
+  ]
+}
