@@ -9,7 +9,7 @@ supply-chain time series. It combines three current techniques into one pipeline
    verifiable source link.
 
 **v1 vertical:** steel / steel-exposed sectors (HRC futures, `SLX` ETF proxy).
-
+**v2 vertical:** Moirai-2 with macro covariates; LLM explanation layer; additional verticals (oil, semiconductors, ag); streaming alerts to Slack/Teams.
 ---
 
 ## Worked example (build-step 1: SLX, TimesFM 2.5 + CQR)
